@@ -1,62 +1,98 @@
+// --- components/DashboardApp.jsx ---
 import React, { useState, useEffect, useCallback } from 'react';
-import Dashboard from './Dashboard/Dashboard';
-import Informations from './Informations/Informations';
-import Assets from './Assets/Assets';
-import AddAssetModal from './AddAssetModal/AddAssetModal';
-import { API_BASE_URL } from '../../apiConfig';
-import ThemeToggleButton from '../ThemeToggleButton'; // Certifique-se de que este arquivo existe
-
-// Importe o CSS que antes era do App.js.
-// Se você o tinha em src/App.css, mova-o para src/components/app.css ou ajuste o caminho.
-import './app.css';
+import './app.css'; // Estilos globais para o layout do dashboard
+import Dashboard from './Dashboard/Dashboard.jsx';
+import Informations from './Informations/Informations.jsx';
+import Assets from './Assets/Assets.jsx';
+import AddAssetModal from './AddAssetModal/AddAssetModal.jsx';
+import { API_BASE_URL } from '../../apiConfig.js'; // Ajuste o caminho se necessário (ex: ../../apiConfig)
+import ThemeToggleButton from '../ThemeToggleButton.jsx';
 
 function DashboardApp() {
+    // --- Estados para Componentes e UI ---
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [dashboardData, setDashboardData] = useState(null);
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState(null);
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [dataRefreshTrigger, setDataRefreshTrigger] = useState(0);
 
-    const fetchDashboardData = useCallback(async () => {
+    // --- Estados de Dados ---
+    const [dashboardData, setDashboardData] = useState(null);
+    const [evolutionData, setEvolutionData] = useState(null);
+    
+    // --- Estados de Carregamento (Loading) ---
+    const [isLoading, setIsLoading] = useState(true);
+    const [isEvolutionLoading, setIsEvolutionLoading] = useState(true);
+    
+    // --- Estados de Erro ---
+    const [dashboardError, setDashboardError] = useState(null);
+    const [evolutionError, setEvolutionError] = useState(null);
+
+    // Função centralizada para buscar todos os dados necessários para o dashboard.
+    const fetchData = useCallback(async () => {
         setIsLoading(true);
-        setError(null);
+        setIsEvolutionLoading(true);
+        setDashboardError(null);
+        setEvolutionError(null);
+        
         try {
-            const response = await fetch(`${API_BASE_URL}/api/portfolio/dashboard`);
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+            // Executa as duas buscas em paralelo para mais performance.
+            // Promise.allSettled garante que ambas terminem, mesmo que uma falhe.
+            const [dashboardResult, evolutionResult] = await Promise.allSettled([
+                fetch(`${API_BASE_URL}/api/portfolio/dashboard`),
+                fetch(`${API_BASE_URL}/api/portfolio/evolution`)
+            ]);
+
+            // Processa o resultado do Dashboard (Informations, Pie Chart, Assets)
+            if (dashboardResult.status === 'fulfilled' && dashboardResult.value.ok) {
+                const data = await dashboardResult.value.json();
+                setDashboardData(data);
+            } else {
+                const errorMsg = dashboardResult.reason?.message || 'Falha ao carregar dados do dashboard.';
+                setDashboardError(errorMsg);
+                console.error("Erro no Dashboard:", errorMsg);
             }
-            const data = await response.json();
-            setDashboardData(data);
+            
+            // Processa o resultado da Evolução do Patrimônio (Bar Chart)
+            if (evolutionResult.status === 'fulfilled' && evolutionResult.value.ok) {
+                const data = await evolutionResult.value.json();
+                setEvolutionData(data.evolution);
+            } else {
+                const errorMsg = evolutionResult.reason?.message || 'Falha ao carregar dados de evolução.';
+                setEvolutionError(errorMsg);
+                console.error("Erro na Evolução:", errorMsg);
+            }
+
         } catch (e) {
-            setError(e.message);
-            console.error("Falha ao buscar dados do dashboard:", e);
+            // Este catch é para erros inesperados na lógica do fetch em si
+            const generalError = "Ocorreu um erro inesperado. Verifique sua conexão.";
+            setDashboardError(generalError);
+            setEvolutionError(generalError);
+            console.error("Erro geral no fetchData:", e);
         } finally {
+            // Finaliza todos os loadings
             setIsLoading(false);
+            setIsEvolutionLoading(false);
             setIsRefreshing(false);
         }
     }, []);
 
+    // Efeito para buscar os dados na montagem do componente e quando o gatilho de refresh for acionado.
     useEffect(() => {
-        fetchDashboardData();
-    }, [fetchDashboardData, dataRefreshTrigger]);
+        fetchData();
+    }, [fetchData, dataRefreshTrigger]);
 
+    // Callback para o modal, para atualizar os dados após uma nova transação.
     const handleTransactionSuccess = () => {
-        console.log("Transação bem-sucedida! Atualizando os dados...");
         setDataRefreshTrigger(prev => prev + 1);
     };
 
+    // Função para o botão "Atualizar Cotações".
     const handleRefreshAssets = async () => {
         setIsRefreshing(true);
         try {
-            const response = await fetch(`${API_BASE_URL}/api/portfolio/refresh`, {
-                method: 'POST',
-            });
-            if (!response.ok) {
-                throw new Error('Falha ao solicitar a atualização no backend.');
-            }
-            console.log('Backend notificado. Dando um tempo para processar e buscando novos dados...');
-
+            const response = await fetch(`${API_BASE_URL}/api/portfolio/refresh`, { method: 'POST' });
+            if (!response.ok) throw new Error('Falha ao solicitar a atualização no backend.');
+            
+            // Espera um tempo para o backend processar e então aciona o refetch de todos os dados.
             setTimeout(() => {
                 setDataRefreshTrigger(prev => prev + 1);
             }, 2000);
@@ -67,11 +103,7 @@ function DashboardApp() {
             setIsRefreshing(false);
         }
     };
-
-    if (error && !dashboardData) {
-        return <div className="error-message-full-page">Erro ao carregar os dados da carteira: {error}</div>;
-    }
-
+    
     return (
         <div className="app-container">
             <header className="app-header">
@@ -81,7 +113,7 @@ function DashboardApp() {
                     <button
                         className="refresh-button"
                         onClick={handleRefreshAssets}
-                        disabled={isRefreshing || isLoading}
+                        disabled={isRefreshing || isLoading || isEvolutionLoading}
                     >
                         {isRefreshing ? 'Atualizando...' : 'Atualizar Cotações'}
                     </button>
@@ -91,9 +123,23 @@ function DashboardApp() {
                 </div>
             </header>
             <main>
-                <Informations summaryData={dashboardData?.summary} isLoading={isLoading} />
-                <Dashboard percentagesData={dashboardData?.percentages} isLoading={isLoading} />
-                <Assets assetsData={dashboardData?.assets} isLoading={isLoading} />
+                <Informations 
+                    summaryData={dashboardData?.summary} 
+                    isLoading={isLoading}
+                    error={dashboardError}
+                />
+                <Dashboard 
+                    percentagesData={dashboardData?.percentages} 
+                    evolutionData={evolutionData}
+                    isPercentagesLoading={isLoading}
+                    isEvolutionLoading={isEvolutionLoading}
+                    evolutionError={evolutionError}
+                />
+                <Assets 
+                    assetsData={dashboardData?.assets} 
+                    isLoading={isLoading}
+                    error={dashboardError}
+                />
             </main>
             <AddAssetModal
                 isOpen={isModalOpen}
