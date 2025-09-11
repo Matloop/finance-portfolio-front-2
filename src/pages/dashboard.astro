@@ -1,0 +1,11 @@
+---
+import Layout from '../layouts/Layout.astro';
+import DashboardApp from '../components/DashboardApp.jsx';
+---
+
+<Layout title="Meu Dashboard - CarteiraPro">
+    <main>
+        <!-- A diretiva client:load torna seu app React interativo no navegador -->
+        <DashboardApp client:load />
+    </main>
+</Layout>

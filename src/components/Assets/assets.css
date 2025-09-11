@@ -1,0 +1,178 @@
+/* --- Arquivo assets.css --- */
+
+/* Contêiner principal dos ativos */
+.assets-container.card {
+    background-color: #ffffff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+    margin-top: 20px;
+}
+
+.assets-container h2 {
+    margin-top: 0;
+    margin-bottom: 20px;
+    font-size: 1.5rem;
+    color: #333;
+}
+
+/* --- ESTILOS DAS ABAS (TABS) --- */
+.tabs-container {
+    display: flex;
+    border-bottom: 2px solid #dee2e6;
+    margin-bottom: 20px;
+}
+
+.tab-button {
+    padding: 10px 20px;
+    cursor: pointer;
+    border: none;
+    background-color: transparent;
+    font-size: 1rem;
+    font-weight: 500;
+    color: #6c757d;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px; /* Alinha com a borda do container */
+    transition: all 0.2s ease-in-out;
+}
+
+.tab-button:hover {
+    color: #0056b3;
+}
+
+.tab-button.active {
+    color: #007bff;
+    border-color: #007bff;
+}
+
+/* Conteúdo da aba */
+.tab-content {
+    /* Estilos se necessário, mas o conteúdo é o Accordion */
+}
+
+/* --- ESTILOS DO ACCORDION (DENTRO DAS ABAS) --- */
+.asset-accordion {
+    margin-bottom: 15px;
+    border: 1px solid #e9ecef;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.accordion-header {
+    background-color: #f8f9fa;
+    padding: 15px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.accordion-header:hover {
+    background-color: #e9ecef;
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.header-left h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    color: #212529;
+}
+
+.total-value {
+    font-size: 0.9rem;
+    color: #495057;
+    font-weight: normal;
+}
+
+.toggle-icon {
+    font-size: 1.5rem;
+    color: #6c757d;
+}
+
+.accordion-content {
+    padding: 0 15px;
+}
+
+/* --- ESTILO DOS ITENS INDIVIDUAIS (Dentro do Accordion) --- */
+.asset-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 5px;
+    border-bottom: 1px solid #f1f3f5;
+}
+
+.asset-item:last-child {
+    border-bottom: none;
+}
+
+.asset-item p {
+    margin: 0;
+    color: #343a40;
+}
+
+.asset-item p:first-child {
+    font-weight: 500;
+}
+/* Adicione isso ao final do seu arquivo assets.css */
+
+.no-assets-message {
+    padding: 15px;
+    text-align: center;
+    color: #6c757d;
+    font-style: italic;
+}
+/* Adicione estas classes ao final do seu assets.css */
+
+.accordion-content .assets-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+
+.assets-table th, .assets-table td {
+    padding: 12px 8px;
+    text-align: left;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.assets-table th {
+    font-size: 0.8rem;
+    color: #6c757d;
+    font-weight: 500;
+    text-transform: uppercase;
+}
+
+.assets-table td {
+    font-size: 0.95rem;
+    color: #343a40;
+}
+
+.assets-table .asset-name {
+    font-weight: 500;
+}
+
+.assets-table .asset-quantity {
+    font-size: 0.85rem;
+    color: #6c757d;
+    display: block; /* Faz a quantidade ficar abaixo do nome */
+}
+
+/* Alinhamento de colunas numéricas */
+.assets-table .align-right {
+    text-align: right;
+}
+
+/* Estilo para a rentabilidade */
+.profit-positive {
+    color: #28a745; /* Verde */
+}
+
+.profit-negative {
+    color: #dc3545; /* Vermelho */
+}
