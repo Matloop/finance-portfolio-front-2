@@ -3,7 +3,8 @@ import Dashboard from './Dashboard/Dashboard';
 import Informations from './Informations/Informations';
 import Assets from './Assets/Assets';
 import AddAssetModal from './AddAssetModal/AddAssetModal';
-import { API_BASE_URL } from '../../apiConfig'; // Certifique-se de que este arquivo existe
+import { API_BASE_URL } from '../../apiConfig';
+import ThemeToggleButton from '../ThemeToggleButton'; // Certifique-se de que este arquivo existe
 
 // Importe o CSS que antes era do App.js.
 // Se você o tinha em src/App.css, mova-o para src/components/app.css ou ajuste o caminho.
@@ -76,6 +77,7 @@ function DashboardApp() {
             <header className="app-header">
                 <h1>Minha Carteira</h1>
                 <div className="header-actions">
+                    <ThemeToggleButton />
                     <button
                         className="refresh-button"
                         onClick={handleRefreshAssets}

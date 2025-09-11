@@ -1,33 +1,73 @@
+/* src/components/Informations/informations.css */
+
+/* === 1. LAYOUT === */
 .informations-container {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 20px;
-    margin-bottom: 20px;
+    grid-template-columns: 1fr; /* Uma coluna em telas pequenas */
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
 }
 
+/* Três colunas em telas maiores */
+@media (min-width: 768px) {
+    .informations-container {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+/* O .info-card agora só se preocupa com o conteúdo interno */
 .info-card {
-    background-color: #fff;
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     text-align: center;
 }
 
+
+/* === 2. TYPOGRAPHY === */
+
+/* Títulos como "Patrimônio Total" */
 .info-card h3 {
-    margin: 0 0 10px 0;
-    color: #606770;
+    margin: 0 0 0.5rem 0;
+    font-size: 0.875rem; /* 14px */
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em; /* Espaçamento entre letras */
 }
 
+/* Valores grandes como "R$ 616.782,00" */
 .info-card p {
     margin: 0;
-    font-size: 1.5rem;
-    font-weight: bold;
+    font-size: 1.875rem; /* 30px */
+    font-weight: 700;
+    line-height: 1.2;
 }
 
-.profit {
-    color: #28a745;
+
+/* === 3. THEME COLORS === */
+
+/* --- Light Mode --- */
+.info-card h3 {
+    color: #6b7280; /* Cinza para o título */
+}
+.info-card p {
+    color: #111827; /* Preto para o valor */
+}
+.info-card .profit {
+    color: #16a34a; /* Verde */
+}
+.info-card .loss {
+    color: #dc2626; /* Vermelho */
 }
 
-.loss {
-    color: #dc3545;
+
+/* --- Dark Mode --- */
+.dark .info-card h3 {
+    color: #94a3b8; /* Cinza claro para o título */
+}
+.dark .info-card p {
+    color: #f8fafc; /* Branco para o valor */
+}
+.dark .info-card .profit {
+    color: #4ade80; /* Verde mais brilhante para contraste */
+}
+.dark .info-card .loss {
+    color: #f87171; /* Vermelho mais brilhante para contraste */
 }

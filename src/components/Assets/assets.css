@@ -1,178 +1,140 @@
-/* --- Arquivo assets.css --- */
+/* src/components/Assets/assets.css (VERSÃO ATUALIZADA) */
 
-/* Contêiner principal dos ativos */
-.assets-container.card {
-    background-color: #ffffff;
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
-    margin-top: 20px;
-}
+/* === 1. LAYOUT GERAL === */
+/* O .assets-container já usa a classe .card de app.css para fundo, borda e sombra. */
+/* Este arquivo só precisa estilizar os elementos INTERNOS. */
 
 .assets-container h2 {
     margin-top: 0;
-    margin-bottom: 20px;
+    margin-bottom: 1.5rem;
     font-size: 1.5rem;
-    color: #333;
+    font-weight: 600;
+    transition: color 0.3s;
 }
 
-/* --- ESTILOS DAS ABAS (TABS) --- */
+.no-assets-message {
+    padding: 2rem;
+    text-align: center;
+    font-style: italic;
+}
+
+
+/* === 2. ABAS (TABS) === */
 .tabs-container {
     display: flex;
-    border-bottom: 2px solid #dee2e6;
-    margin-bottom: 20px;
+    border-bottom: 2px solid; /* A cor será definida pelo tema */
+    margin-bottom: 1.5rem;
+    transition: border-color 0.3s;
 }
 
 .tab-button {
-    padding: 10px 20px;
+    padding: 0.75rem 1.25rem;
     cursor: pointer;
     border: none;
     background-color: transparent;
     font-size: 1rem;
     font-weight: 500;
-    color: #6c757d;
     border-bottom: 2px solid transparent;
-    margin-bottom: -2px; /* Alinha com a borda do container */
+    margin-bottom: -2px;
     transition: all 0.2s ease-in-out;
 }
 
-.tab-button:hover {
-    color: #0056b3;
-}
 
-.tab-button.active {
-    color: #007bff;
-    border-color: #007bff;
-}
-
-/* Conteúdo da aba */
-.tab-content {
-    /* Estilos se necessário, mas o conteúdo é o Accordion */
-}
-
-/* --- ESTILOS DO ACCORDION (DENTRO DAS ABAS) --- */
+/* === 3. ACCORDION === */
 .asset-accordion {
-    margin-bottom: 15px;
-    border: 1px solid #e9ecef;
-    border-radius: 6px;
+    margin-bottom: 1rem;
+    border: 1px solid; /* A cor será definida pelo tema */
+    border-radius: 0.5rem;
     overflow: hidden;
+    transition: border-color 0.3s;
 }
 
 .accordion-header {
-    background-color: #f8f9fa;
-    padding: 15px;
+    padding: 1rem 1.25rem;
     cursor: pointer;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    transition: background-color 0.2s;
 }
 
-.accordion-header:hover {
-    background-color: #e9ecef;
-}
+.header-left { display: flex; align-items: center; gap: 1rem; }
+.header-left h3 { margin: 0; font-size: 1.1rem; font-weight: 600; }
+.total-value { font-size: 1rem; font-weight: 500; }
+.toggle-icon { font-size: 1.5rem; font-weight: 300; }
 
-.header-left {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-}
 
-.header-left h3 {
-    margin: 0;
-    font-size: 1.1rem;
-    color: #212529;
-}
-
-.total-value {
-    font-size: 0.9rem;
-    color: #495057;
-    font-weight: normal;
-}
-
-.toggle-icon {
-    font-size: 1.5rem;
-    color: #6c757d;
-}
-
+/* === 4. TABELA DE ATIVOS === */
 .accordion-content {
-    padding: 0 15px;
+    padding: 0; /* A tabela ocupará todo o espaço */
 }
 
-/* --- ESTILO DOS ITENS INDIVIDUAIS (Dentro do Accordion) --- */
-.asset-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 12px 5px;
-    border-bottom: 1px solid #f1f3f5;
-}
-
-.asset-item:last-child {
-    border-bottom: none;
-}
-
-.asset-item p {
-    margin: 0;
-    color: #343a40;
-}
-
-.asset-item p:first-child {
-    font-weight: 500;
-}
-/* Adicione isso ao final do seu arquivo assets.css */
-
-.no-assets-message {
-    padding: 15px;
-    text-align: center;
-    color: #6c757d;
-    font-style: italic;
-}
-/* Adicione estas classes ao final do seu assets.css */
-
-.accordion-content .assets-table {
+.assets-table {
     width: 100%;
     border-collapse: collapse;
-    margin-top: 10px;
 }
 
 .assets-table th, .assets-table td {
-    padding: 12px 8px;
+    padding: 0.875rem 1.25rem;
     text-align: left;
-    border-bottom: 1px solid #f0f0f0;
+    border-top: 1px solid; /* Borda entre as linhas */
+    transition: border-color 0.3s;
 }
 
 .assets-table th {
-    font-size: 0.8rem;
-    color: #6c757d;
-    font-weight: 500;
+    font-size: 0.75rem;
+    font-weight: 600;
     text-transform: uppercase;
+    letter-spacing: 0.05em;
 }
 
-.assets-table td {
-    font-size: 0.95rem;
-    color: #343a40;
-}
-
-.assets-table .asset-name {
-    font-weight: 500;
-}
-
+.assets-table td { font-size: 0.95rem; }
+.assets-table .asset-name { font-weight: 600; }
 .assets-table .asset-quantity {
     font-size: 0.85rem;
-    color: #6c757d;
-    display: block; /* Faz a quantidade ficar abaixo do nome */
+    display: block;
 }
+.assets-table .align-right { text-align: right; }
+.profit-positive { color: #16a34a; } /* Verde para lucro */
+.profit-negative { color: #dc2626; } /* Vermelho para perda */
 
-/* Alinhamento de colunas numéricas */
-.assets-table .align-right {
-    text-align: right;
-}
 
-/* Estilo para a rentabilidade */
-.profit-positive {
-    color: #28a745; /* Verde */
-}
+/* === 5. CORES DOS TEMAS === */
 
-.profit-negative {
-    color: #dc3545; /* Vermelho */
-}
+/* --- TEMA CLARO --- */
+.assets-container h2 { color: #111827; }
+.tabs-container { border-color: #e5e7eb; }
+.tab-button { color: #6b7280; }
+.tab-button:hover { color: #111827; }
+.tab-button.active { color: #3b82f6; border-color: #3b82f6; }
+.asset-accordion { border-color: #e5e7eb; }
+.accordion-header { background-color: #f9fafb; }
+.accordion-header:hover { background-color: #f3f4f6; }
+.header-left h3 { color: #1f2937; }
+.total-value { color: #4b5563; }
+.toggle-icon { color: #6b7280; }
+.assets-table th, .assets-table td { border-color: #f3f4f6; }
+.assets-table th { color: #6b7280; }
+.assets-table td { color: #1f2937; }
+.assets-table .asset-quantity { color: #6b7280; }
+.no-assets-message { color: #6b7280; }
+
+/* --- TEMA ESCURO --- */
+.dark .assets-container h2 { color: #f8fafc; }
+.dark .tabs-container { border-color: #334155; }
+.dark .tab-button { color: #94a3b8; }
+.dark .tab-button:hover { color: #e2e8f0; }
+.dark .tab-button.active { color: #60a5fa; border-color: #60a5fa; }
+.dark .asset-accordion { border-color: #334155; }
+.dark .accordion-header { background-color: #334155; }
+.dark .accordion-header:hover { background-color: #475569; }
+.dark .header-left h3 { color: #f1f5f9; }
+.dark .total-value { color: #cbd5e1; }
+.dark .toggle-icon { color: #94a3b8; }
+.dark .assets-table th, .dark .assets-table td { border-color: #334155; }
+.dark .assets-table th { color: #94a3b8; }
+.dark .assets-table td { color: #e2e8f0; }
+.dark .assets-table .asset-quantity { color: #94a3b8; }
+.dark .no-assets-message { color: #94a3b8; }
+.dark .profit-positive { color: #4ade80; } /* Verde mais brilhante */
+.dark .profit-negative { color: #f87171; } /* Vermelho mais brilhante */

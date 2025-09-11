@@ -2,6 +2,7 @@
 import React from 'react';
 import './LandingPage.css';
 import dashboardImage from '../../assets/dashboard-placeholder.png';
+import ThemeToggleButton from '../../ThemeToggleButton';
 
 const Header = () => (
     <header className="landing-header animate-fade-in">
@@ -12,6 +13,12 @@ const Header = () => (
                 <a href="#">Preços</a>
                 <a href="#">Contato</a>
             </nav>
+            <div className="flex items-center gap-4"> {/* Wrapper para botões */}
+                <ThemeToggleButton /> {/* <-- ADICIONE O BOTÃO AQUI */}
+                <a href="/dashboard" className="cta-button primary-cta">
+                    Acessar Carteira
+                </a>
+            </div>
             <a href="/dashboard" className="cta-button primary-cta">
                 Acessar Carteira
             </a>
@@ -21,25 +28,36 @@ const Header = () => (
 
 const Hero = () => (
     <section className="hero-section">
-        <div className="landing-container text-center">
-            <h1 className="hero-title animate-fade-in-up">
-                Controle total dos seus
-                <span className="gradient-text"> investimentos</span>.
-            </h1>
-            <p className="hero-subtitle animate-fade-in-up [animation-delay:200ms]">
-                Visualize sua carteira, acompanhe a rentabilidade e tome decisões mais inteligentes. De Ações a Cripto, tudo em um só lugar.
-            </p>
-            <div className="hero-buttons animate-fade-in-up [animation-delay:400ms]">
-                <a href="/dashboard" className="cta-button primary-cta large-cta">
-                    Comece Agora &rarr;
-                </a>
-                <a href="#features" className="cta-button secondary-cta large-cta">
-                    Saiba Mais
-                </a>
+        {/* MODIFICAÇÃO: Trocamos 'text-center' por 'hero-grid-container' */}
+        <div className="landing-container hero-grid-container">
+            
+            {/* Coluna Esquerda (adicionamos este div) */}
+            <div className="hero-left-column">
+                <h1 className="hero-title animate-fade-in-up">
+                    Controle total<br/>dos seus<br/>
+                    <span className="gradient-text">investimentos.</span>
+                </h1>
             </div>
-            <div className="hero-image-wrapper animate-fade-in-up [animation-delay:600ms]">
-                <img src={dashboardImage} alt="Dashboard da aplicação CarteiraPro" className="hero-image" />
+
+            {/* Coluna Direita (adicionamos este div) */}
+            <div className="hero-right-column">
+                <p className="hero-subtitle animate-fade-in-up" style={{ animationDelay: '200ms' }}>
+                    Visualize sua carteira, acompanhe a rentabilidade e tome decisões mais inteligentes. De Ações a Cripto, tudo em um só lugar.
+                </p>
+                <div className="hero-buttons animate-fade-in-up" style={{ animationDelay: '400ms' }}>
+                    <a href="/dashboard" className="cta-button primary-cta large-cta">
+                        Comece Agora &rarr;
+                    </a>
+                    <a href="#features" className="cta-button secondary-cta large-cta">
+                        Saiba Mais
+                    </a>
+                </div>
+                {/* A imagem foi movida para a coluna direita */}
+                <div className="hero-image-wrapper animate-fade-in-up" style={{ animationDelay: '600ms' }}>
+                    <img src={dashboardImage} alt="Dashboard da aplicação CarteiraPro" className="hero-image" />
+                </div>
             </div>
+
         </div>
     </section>
 );
