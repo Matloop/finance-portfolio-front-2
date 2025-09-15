@@ -8,7 +8,7 @@ ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarEle
 
 // --- Constantes e Funções Auxiliares ---
 const COLORS = {
-    category: ['#3b82f6', '#16a34a', '#f97316', '#9333ea'], // Azul, Verde, Laranja, Roxo
+    category: ['#3b82f6', '#16a34a', '#f97316', '#9333ea'],
     brazil: ['#3498db', '#1abc9c', '#27ae60'],
     usa: ['#2ecc71', '#16a085'],
     crypto: ['#f7931a', '#627eea', '#f3ba2f', '#26a17b', '#e84142', '#a6b9c7', '#222222'],
@@ -18,13 +18,18 @@ const LABEL_MAP = {
     brasil: 'Brasil',
     eua: 'EUA',
     cripto: 'Cripto',
-    ações: 'Ações',
-    etfs: 'ETFs',
+    'ações': 'Ações',
+    'etfs': 'ETFs',
     'renda fixa': 'Renda Fixa',
-    criptomoedas: 'Criptomoedas',
+    'criptomoedas': 'Criptomoedas',
 };
 
 const getFriendlyLabel = (label) => LABEL_MAP[label.toLowerCase()] || label;
+
+// Função de formatação de moeda para ser usada nos tooltips
+const formatCurrency = (value = 0) =>
+    Number(value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
 
 // --- Componente Principal ---
 const Dashboard = ({ 
@@ -42,7 +47,6 @@ const Dashboard = ({
     const [isDarkMode, setIsDarkMode] = useState(false);
 
     useEffect(() => {
-        // Acessa `document` apenas no cliente
         const checkTheme = () => setIsDarkMode(document.documentElement.classList.contains('dark'));
         checkTheme();
         const observer = new MutationObserver(checkTheme);
@@ -50,7 +54,7 @@ const Dashboard = ({
         return () => observer.disconnect();
     }, []);
 
-    // Efeito para atualizar o gráfico de pizza quando os dados ou a navegação mudam
+    // Efeito para atualizar o gráfico de pizza
     useEffect(() => {
         if (percentagesData) {
             const currentView = viewStack[viewStack.length - 1];
@@ -67,7 +71,7 @@ const Dashboard = ({
         }
     }, [percentagesData, viewStack]);
 
-    // Lógica para o "drill-down" no gráfico de pizza
+    // Lógica de "drill-down" do gráfico de pizza
     const handlePieClick = (event, elements) => {
         if (!elements.length) return;
         const currentView = viewStack[viewStack.length - 1];
@@ -83,14 +87,14 @@ const Dashboard = ({
         }
     };
 
-    // Lógica para o botão "Voltar" do gráfico de pizza
+    // Lógica do botão "Voltar"
     const handleBack = () => {
         if (viewStack.length > 1) {
             setViewStack(viewStack.slice(0, -1));
         }
     };
 
-    // Otimização das opções do gráfico de pizza com useMemo
+    // Opções do gráfico de pizza
     const pieOptions = useMemo(() => ({
         responsive: true,
         maintainAspectRatio: false,
@@ -101,14 +105,14 @@ const Dashboard = ({
             },
             tooltip: {
                 callbacks: {
-                    label: (context) => `${context.label || ''}: ${context.parsed.toFixed(2)}%`
+                    label: (context) => `${context.label || ''}: ${Number(context.parsed).toFixed(2)}%`
                 }
             }
         },
         onClick: handlePieClick,
-    }), [isDarkMode, viewStack, percentagesData]); // Adicionado percentagesData para reavaliar onClick
+    }), [isDarkMode, viewStack, percentagesData]);
 
-    // Otimização dos dados do gráfico de barras com useMemo
+    // Dados do gráfico de barras
     const barChartData = useMemo(() => {
         if (!evolutionData || evolutionData.length === 0) return { labels: [], datasets: [] };
         
@@ -135,7 +139,7 @@ const Dashboard = ({
         };
     }, [evolutionData, isDarkMode]);
     
-    // Otimização das opções do gráfico de barras com useMemo
+    // Opções do gráfico de barras (com o tooltip corrigido)
     const barChartOptions = useMemo(() => ({
         responsive: true,
         maintainAspectRatio: false,
@@ -148,11 +152,17 @@ const Dashboard = ({
                 mode: 'index',
                 intersect: false,
                 callbacks: {
+                    // ***** CORREÇÃO APLICADA AQUI *****
+                    label: function(context) {
+                        const label = context.dataset.label || '';
+                        const value = context.parsed.y;
+                        return value !== null ? `${label}: ${formatCurrency(value)}` : label;
+                    },
                     footer: (tooltipItems) => {
                         const index = tooltipItems[0].dataIndex;
                         if (evolutionData && evolutionData[index]) {
                             const patrimonio = evolutionData[index].patrimonio;
-                            return `Patrimônio: ${patrimonio.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`;
+                            return `Patrimônio: ${formatCurrency(patrimonio)}`;
                         }
                         return '';
                     }
@@ -170,8 +180,8 @@ const Dashboard = ({
                 ticks: {
                     color: isDarkMode ? '#94a3b8' : '#6b7280',
                     callback: (value) => {
-                        if (value >= 1000000) return `${(value / 1000000).toFixed(1)}M`;
-                        if (value >= 1000) return `${value / 1000}k`;
+                        if (Math.abs(value) >= 1000000) return `${(value / 1000000).toFixed(1)}M`;
+                        if (Math.abs(value) >= 1000) return `${value / 1000}k`;
                         return value;
                     }
                 },
@@ -182,7 +192,6 @@ const Dashboard = ({
 
     return (
         <div className="dashboard-container">
-            {/* Card do Gráfico de Pizza */}
             <div className="chart-card card">
                 <div className="chart-header">
                     <h2>{viewStack[viewStack.length - 1].title}</h2>
@@ -203,7 +212,6 @@ const Dashboard = ({
                 </div>
             </div>
             
-            {/* Card do Gráfico de Evolução */}
             <div className="chart-card card">
                 <div className="chart-header">
                     <h2>Evolução do Patrimônio</h2>

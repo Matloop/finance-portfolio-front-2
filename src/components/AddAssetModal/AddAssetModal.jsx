@@ -180,7 +180,7 @@ const AddAssetModal = ({ isOpen, onClose, onTransactionSuccess }) => {
                                 <input type="number" id="asset-quantity" step="any" value={quantity} onChange={(e) => setQuantity(e.target.value)} />
                             </div>
                             <div className="form-group">
-                                <label htmlFor="asset-price">Preço Unitário (R$)</label>
+                                <label htmlFor="asset-price">Preço Unitário (R$ ou USD)</label>
                                 <input type="number" id="asset-price" step="any" value={pricePerUnit} onChange={(e) => setPricePerUnit(e.target.value)} />
                             </div>
                             <div className="form-group">
