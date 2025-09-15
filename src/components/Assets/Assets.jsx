@@ -1,19 +1,27 @@
-// --- components/Assets/Assets.js ---
+// src/components/Assets/Assets.jsx
+
 import React, { useState, useEffect } from 'react';
 import './assets.css';
 
 // --- FUNÇÕES AUXILIARES ---
 
-// Formata um número para o padrão de moeda brasileiro (R$)
+// Formata um número para o padrão de moeda brasileiro (R$) - JÁ ESTAVA CORRETO
 const formatCurrency = (value = 0) =>
     Number(value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
-// Formata a quantidade, permitindo mais casas decimais para cripto
+// Formata a quantidade, permitindo mais casas decimais para cripto - JÁ ESTAVA CORRETO
 const formatQuantity = (qty = 0) =>
     Number(qty).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 8 });
 
-// Formata um número para porcentagem com duas casas decimais
-const formatPercentage = (value = 0) => `${Number(value).toFixed(2)}%`;
+// Formata um número para porcentagem com duas casas decimais - CORRIGIDO
+const formatPercentage = (value = 0) => {
+    // A MUDANÇA ESTÁ AQUI: Usamos toLocaleString para o padrão brasileiro (1.234,56%)
+    const formattedNumber = Number(value).toLocaleString('pt-BR', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    });
+    return `${formattedNumber}%`;
+};
 
 // Mapeia chaves da API para nomes amigáveis na UI
 const getFriendlyName = (key) => {
@@ -28,9 +36,6 @@ const getFriendlyName = (key) => {
 
 // --- COMPONENTES REUTILIZÁVEIS ---
 
-/**
- * Componente Accordion. Mostra o valor total da subcategoria.
- */
 const Accordion = ({ title, totalValue, children, defaultOpen = true }) => {
     const [isOpen, setIsOpen] = useState(defaultOpen);
     return (
@@ -47,14 +52,7 @@ const Accordion = ({ title, totalValue, children, defaultOpen = true }) => {
     );
 };
 
-/**
- * Componente Tabela de Ativos. Renderiza o cabeçalho e as linhas de forma condicional.
- * @param {object} props
- * @param {Array} props.assets - A lista de ativos a serem renderizados.
- * @param {boolean} props.isFixedIncome - Flag para indicar se é uma tabela de Renda Fixa.
- */
 const AssetsTable = ({ assets, isFixedIncome = false }) => {
-    // Se for Renda Fixa, renderizamos uma tabela simplificada.
     if (isFixedIncome) {
         return (
             <table className="assets-table">
@@ -84,7 +82,6 @@ const AssetsTable = ({ assets, isFixedIncome = false }) => {
         );
     }
 
-    // Caso contrário, renderizamos a tabela completa para Ações, ETFs, Cripto, etc.
     return (
         <table className="assets-table">
             <thead>
@@ -136,7 +133,7 @@ const Assets = ({ assetsData, isLoading }) => {
         return (
             <div className="assets-container card">
                 <h2>Meus Ativos</h2>
-                <p>Carregando ativos...</p>
+                <p className='info-message'>Carregando ativos...</p>
             </div>
         );
     }
@@ -145,7 +142,7 @@ const Assets = ({ assetsData, isLoading }) => {
         return (
             <div className="assets-container card">
                 <h2>Meus Ativos</h2>
-                <p>Nenhum ativo na carteira para exibir.</p>
+                <p className="no-assets-message">Nenhum ativo na carteira para exibir.</p>
             </div>
         );
     }
