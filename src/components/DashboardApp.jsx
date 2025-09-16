@@ -1,11 +1,11 @@
 // --- components/DashboardApp.jsx ---
-import React, { useState, useEffect, useCallback } from 'react';
-import './app.css'; // Estilos globais para o layout do dashboard
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import './app.css';
 import Dashboard from './Dashboard/Dashboard.jsx';
 import Informations from './Informations/Informations.jsx';
 import Assets from './Assets/Assets.jsx';
 import AddAssetModal from './AddAssetModal/AddAssetModal.jsx';
-import { API_BASE_URL } from '../../apiConfig.js'; // Ajuste o caminho se necessário (ex: ../../apiConfig)
+import { API_BASE_URL } from '../../apiConfig.js';
 import ThemeToggleButton from '../ThemeToggleButton.jsx';
 
 function DashboardApp() {
@@ -13,7 +13,7 @@ function DashboardApp() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [dataRefreshTrigger, setDataRefreshTrigger] = useState(0);
-
+    
     // --- Estados de Dados ---
     const [dashboardData, setDashboardData] = useState(null);
     const [evolutionData, setEvolutionData] = useState(null);
@@ -26,7 +26,12 @@ function DashboardApp() {
     const [dashboardError, setDashboardError] = useState(null);
     const [evolutionError, setEvolutionError] = useState(null);
 
-    // Função centralizada para buscar todos os dados necessários para o dashboard.
+    // --- Estados para a funcionalidade de Importação ---
+    const [isImporting, setIsImporting] = useState(false);
+    const [importResult, setImportResult] = useState(null);
+    const fileInputRef = useRef(null); // Referência para o input de arquivo escondido
+
+    // Função centralizada para buscar todos os dados
     const fetchData = useCallback(async () => {
         setIsLoading(true);
         setIsEvolutionLoading(true);
@@ -34,73 +39,86 @@ function DashboardApp() {
         setEvolutionError(null);
         
         try {
-            // Executa as duas buscas em paralelo para mais performance.
-            // Promise.allSettled garante que ambas terminem, mesmo que uma falhe.
             const [dashboardResult, evolutionResult] = await Promise.allSettled([
                 fetch(`${API_BASE_URL}/api/portfolio/dashboard`),
                 fetch(`${API_BASE_URL}/api/portfolio/evolution`)
             ]);
 
-            // Processa o resultado do Dashboard (Informations, Pie Chart, Assets)
             if (dashboardResult.status === 'fulfilled' && dashboardResult.value.ok) {
-                const data = await dashboardResult.value.json();
-                setDashboardData(data);
+                setDashboardData(await dashboardResult.value.json());
             } else {
-                const errorMsg = dashboardResult.reason?.message || 'Falha ao carregar dados do dashboard.';
-                setDashboardError(errorMsg);
-                console.error("Erro no Dashboard:", errorMsg);
+                setDashboardError(dashboardResult.reason?.message || 'Falha ao carregar dados do dashboard.');
             }
             
-            // Processa o resultado da Evolução do Patrimônio (Bar Chart)
             if (evolutionResult.status === 'fulfilled' && evolutionResult.value.ok) {
                 const data = await evolutionResult.value.json();
                 setEvolutionData(data.evolution);
             } else {
-                const errorMsg = evolutionResult.reason?.message || 'Falha ao carregar dados de evolução.';
-                setEvolutionError(errorMsg);
-                console.error("Erro na Evolução:", errorMsg);
+                setEvolutionError(evolutionResult.reason?.message || 'Falha ao carregar dados de evolução.');
             }
-
         } catch (e) {
-            // Este catch é para erros inesperados na lógica do fetch em si
             const generalError = "Ocorreu um erro inesperado. Verifique sua conexão.";
             setDashboardError(generalError);
             setEvolutionError(generalError);
-            console.error("Erro geral no fetchData:", e);
         } finally {
-            // Finaliza todos os loadings
             setIsLoading(false);
             setIsEvolutionLoading(false);
             setIsRefreshing(false);
         }
     }, []);
 
-    // Efeito para buscar os dados na montagem do componente e quando o gatilho de refresh for acionado.
     useEffect(() => {
         fetchData();
     }, [fetchData, dataRefreshTrigger]);
 
-    // Callback para o modal, para atualizar os dados após uma nova transação.
     const handleTransactionSuccess = () => {
         setDataRefreshTrigger(prev => prev + 1);
     };
 
-    // Função para o botão "Atualizar Cotações".
     const handleRefreshAssets = async () => {
         setIsRefreshing(true);
         try {
             const response = await fetch(`${API_BASE_URL}/api/portfolio/refresh`, { method: 'POST' });
             if (!response.ok) throw new Error('Falha ao solicitar a atualização no backend.');
-            
-            // Espera um tempo para o backend processar e então aciona o refetch de todos os dados.
-            setTimeout(() => {
-                setDataRefreshTrigger(prev => prev + 1);
-            }, 2000);
-
+            setTimeout(() => setDataRefreshTrigger(prev => prev + 1), 2000);
         } catch (err) {
-            console.error('Erro ao atualizar cotações:', err);
             alert('Não foi possível atualizar as cotações. Tente novamente.');
             setIsRefreshing(false);
+        }
+    };
+
+    // --- Lógica de Importação de CSV ---
+    const handleImportClick = () => {
+        fileInputRef.current.click();
+    };
+
+    const handleFileImport = async (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        setIsImporting(true);
+        setImportResult(null);
+        const formData = new FormData();
+        formData.append('file', file);
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/csv/import/transactions`, {
+                method: 'POST',
+                body: formData,
+            });
+
+            const result = await response.json();
+            setImportResult(result);
+
+            if (response.ok && result.successCount > 0) {
+                handleTransactionSuccess(); // Aciona o refresh dos dados do dashboard
+            }
+
+        } catch (err) {
+            setImportResult({ successCount: 0, errorCount: 1, errors: ['Erro de rede ao enviar o arquivo.'] });
+        } finally {
+            setIsImporting(false);
+            event.target.value = null; // Limpa o input
         }
     };
     
@@ -113,9 +131,31 @@ function DashboardApp() {
                     <button
                         className="refresh-button"
                         onClick={handleRefreshAssets}
-                        disabled={isRefreshing || isLoading || isEvolutionLoading}
+                        disabled={isRefreshing || isLoading || isEvolutionLoading || isImporting}
                     >
                         {isRefreshing ? 'Atualizando...' : 'Atualizar Cotações'}
+                    </button>
+                     <a
+                        href={`${API_BASE_URL}/api/csv/export/transactions`}
+                        className="export-button"
+                        download="carteira_transacoes.csv"
+                    >
+                        Exportar CSV
+                    </a>
+                    {/* Input de arquivo escondido */}
+                    <input
+                        type="file"
+                        ref={fileInputRef}
+                        onChange={handleFileImport}
+                        accept=".csv"
+                        style={{ display: 'none' }}
+                    />
+                    <button
+                        className="import-button"
+                        onClick={handleImportClick}
+                        disabled={isImporting}
+                    >
+                        {isImporting ? 'Importando...' : 'Importar CSV'}
                     </button>
                     <button className="add-button" onClick={() => setIsModalOpen(true)}>
                         Adicionar Ativo
@@ -123,6 +163,19 @@ function DashboardApp() {
                 </div>
             </header>
             <main>
+                {/* Painel de Resultado da Importação */}
+                {importResult && (
+                    <div className={`import-summary ${importResult.errorCount > 0 ? 'error' : 'success'}`}>
+                        <p>Importação concluída: {importResult.successCount} sucesso(s), {importResult.errorCount} erro(s).</p>
+                        {importResult.errors && importResult.errors.length > 0 && (
+                            <ul>
+                                {importResult.errors.slice(0, 5).map((err, i) => <li key={i}>{err}</li>)}
+                                {importResult.errors.length > 5 && <li>E mais {importResult.errors.length - 5} erros...</li>}
+                            </ul>
+                        )}
+                    </div>
+                )}
+
                 <Informations 
                     summaryData={dashboardData?.summary} 
                     isLoading={isLoading}
