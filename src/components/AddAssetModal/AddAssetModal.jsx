@@ -1,21 +1,46 @@
-// --- components/AddAssetModal/AddAssetModal.js ---
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './addAssetModal.css';
 import { API_BASE_URL } from '../../../apiConfig';
+import useDebounce from '../../hooks/useDebounce';
+
+// Função auxiliar para nomes amigáveis na UI
+const getFriendlyName = (key) => {
+    const nameMap = {
+        'CRYPTO': 'Criptomoeda',
+        'STOCK_B3': 'Ação (Brasil)',
+        'ETF_B3': 'ETF (Brasil)',
+        'STOCK_US': 'Ação (EUA)',
+        'ETF_US': 'ETF (EUA)',
+        'Ações': 'Ações',
+        'ETFs': 'ETFs',
+        'Renda Fixa': 'Renda Fixa',
+        'Criptomoedas': 'Criptomoedas'
+    };
+    return nameMap[key] || key;
+};
 
 const AddAssetModal = ({ isOpen, onClose, onTransactionSuccess }) => {
+    // --- Estados para as abas e UI geral ---
     const [activeTab, setActiveTab] = useState('buy');
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState(null);
 
-    // --- Estados para os campos de Cripto/Ações/ETFs ---
+    // --- Estados para os campos de Compra/Venda ---
     const [assetType, setAssetType] = useState('CRYPTO');
     const [market, setMarket] = useState(null);
     const [selectedCategory, setSelectedCategory] = useState('CRYPTO');
-
     const [ticker, setTicker] = useState('');
     const [quantity, setQuantity] = useState('');
     const [pricePerUnit, setPricePerUnit] = useState('');
     const [transactionDate, setTransactionDate] = useState('');
     const [otherCosts, setOtherCosts] = useState('');
+
+    // --- Estados para a busca interativa ---
+    const [searchTerm, setSearchTerm] = useState('');
+    const debouncedSearchTerm = useDebounce(searchTerm, 400);
+    const [searchResults, setSearchResults] = useState([]);
+    const [isSearching, setIsSearching] = useState(false);
+    const [isFetchingPrice, setIsFetchingPrice] = useState(false);
 
     // --- Estados para os campos de Renda Fixa ---
     const [fiName, setFiName] = useState('');
@@ -26,27 +51,24 @@ const AddAssetModal = ({ isOpen, onClose, onTransactionSuccess }) => {
     const [fiMaturityDate, setFiMaturityDate] = useState('');
     const [fiDailyLiquidity, setFiDailyLiquidity] = useState(false);
 
-    const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState(null);
+    // Efeito para buscar na API quando o termo de busca (com debounce) mudar
+    useEffect(() => {
+        if (debouncedSearchTerm && debouncedSearchTerm.length > 1) {
+            setIsSearching(true);
+            fetch(`${API_BASE_URL}/api/market-data/search/${debouncedSearchTerm}`)
+                .then(res => res.ok ? res.json() : [])
+                .then(data => setSearchResults(data))
+                .catch(err => console.error("Erro na busca de ativos:", err))
+                .finally(() => setIsSearching(false));
+        } else {
+            setSearchResults([]);
+        }
+    }, [debouncedSearchTerm]);
 
     if (!isOpen) return null;
 
-    const handleCategoryChange = (e) => {
-        const value = e.target.value;
-        setSelectedCategory(value);
-
-        if (value.includes('_')) {
-            const [type, mkt] = value.split('_');
-            setAssetType(type);
-            setMarket(mkt);
-        } else {
-            setAssetType(value);
-            setMarket(null);
-        }
-    };
-
+    // Limpa todos os estados e fecha o modal
     const handleClose = () => {
-        // Limpa todos os estados ao fechar
         setActiveTab('buy');
         setAssetType('CRYPTO');
         setMarket(null);
@@ -64,74 +86,109 @@ const AddAssetModal = ({ isOpen, onClose, onTransactionSuccess }) => {
         setFiMaturityDate('');
         setFiDailyLiquidity(false);
         setError(null);
+        setSearchTerm('');
+        setSearchResults([]);
         onClose();
     };
 
+    // Lida com a mudança manual do tipo de ativo no <select>
+    const handleCategoryChange = (e) => {
+        const value = e.target.value;
+        setSelectedCategory(value);
+        if (value.includes('_')) {
+            const [type, mkt] = value.split('_');
+            setAssetType(type);
+            setMarket(mkt);
+        } else {
+            setAssetType(value);
+            setMarket(null);
+        }
+        setSearchTerm('');
+        setSearchResults([]);
+        setTicker('');
+        setPricePerUnit('');
+    };
+
+    // Busca o preço atual do ativo selecionado
+    const fetchAssetPrice = async (selectedTicker) => {
+        if (!selectedTicker) return;
+        setIsFetchingPrice(true);
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/market-data/price/${selectedTicker}`);
+            if (response.ok) {
+                const price = await response.json();
+                setPricePerUnit(price);
+            } else {
+                console.warn(`Preço não encontrado para: ${selectedTicker}`);
+            }
+        } catch (error) {
+            console.error("Erro ao buscar preço do ativo:", error);
+        } finally {
+            setIsFetchingPrice(false);
+        }
+    };
+
+    // Chamada quando o usuário clica em um resultado da busca
+    const handleSelectSearchResult = (result) => {
+        setTicker(result.ticker);
+        setAssetType(result.assetType);
+        setMarket(result.market);
+        
+        const categoryValue = result.market ? `${result.assetType}_${result.market}` : result.assetType;
+        setSelectedCategory(categoryValue);
+        
+        setSearchTerm('');
+        setSearchResults([]);
+        
+        fetchAssetPrice(result.ticker);
+    };
+
+    // Lida com a submissão do formulário
     const handleSubmit = async (e) => {
         e.preventDefault();
         setIsLoading(true);
         setError(null);
-
         try {
             if (activeTab === 'buy' || activeTab === 'sell') {
                 if (!ticker || !quantity || !pricePerUnit || !transactionDate) {
                     setError('Por favor, preencha todos os campos obrigatórios.');
-                    setIsLoading(false);
-                    return;
+                    setIsLoading(false); return;
                 }
-
                 const payload = {
-                    ticker: ticker.toUpperCase(),
-                    assetType,
-                    market: market,
+                    ticker: ticker.toUpperCase(), assetType, market,
                     transactionType: activeTab.toUpperCase(),
-                    quantity: parseFloat(quantity),
-                    pricePerUnit: parseFloat(pricePerUnit),
-                    transactionDate,
-                    otherCosts: otherCosts ? parseFloat(otherCosts) : null,
+                    quantity: parseFloat(quantity), pricePerUnit: parseFloat(pricePerUnit),
+                    transactionDate, otherCosts: otherCosts ? parseFloat(otherCosts) : null,
                 };
-
                 const response = await fetch(`${API_BASE_URL}/api/transactions`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload),
                 });
-
                 if (!response.ok) {
-                    const errorData = await response.json().catch(() => ({ message: 'Erro desconhecido ao processar a resposta do servidor.' }));
-                    throw new Error(errorData.message || `Erro: ${response.statusText}`);
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.message || 'Ocorreu um erro ao salvar a transação.');
                 }
-
             } else if (activeTab === 'fixedIncome') {
-                // CORREÇÃO 1: Validação de 'fiIndexerRate' foi removida
                 if (!fiName || !fiPurchaseDate || !fiInitialValue || !fiMaturityDate) {
                     setError('Por favor, preencha todos os campos obrigatórios para Renda Fixa.');
-                    setIsLoading(false); 
-                    return;
+                    setIsLoading(false); return;
                 }
-
-                // CORREÇÃO 2: Trata o valor opcional. Se estiver vazio, envia null.
-                const contractedRateValue = fiIndexerRate ? parseFloat(fiIndexerRate) : null;
-
                 const fixedIncomePayload = {
-                    name: fiName, 
-                    investedAmount: parseFloat(fiInitialValue), 
+                    name: fiName,
+                    investedAmount: parseFloat(fiInitialValue),
                     investmentDate: fiPurchaseDate,
-                    isDailyLiquid: fiDailyLiquidity, 
-                    maturityDate: fiMaturityDate, 
+                    isDailyLiquid: fiDailyLiquidity,
+                    maturityDate: fiMaturityDate,
                     indexType: fiIndexer,
-                    contractedRate: contractedRateValue, // Envia o valor tratado
+                    contractedRate: fiIndexerRate ? parseFloat(fiIndexerRate) : null,
                 };
-                
                 const response = await fetch(`${API_BASE_URL}/api/fixed-income`, {
-                    method: 'POST', 
-                    headers: { 'Content-Type': 'application/json' },
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(fixedIncomePayload),
                 });
-
                 if (!response.ok) {
-                    const errorData = await response.json().catch(() => ({ message: 'Erro desconhecido' }));
-                    throw new Error(errorData.message || `Erro: ${response.statusText}`);
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.message || 'Ocorreu um erro ao salvar o ativo de renda fixa.');
                 }
             }
             onTransactionSuccess();
@@ -158,7 +215,7 @@ const AddAssetModal = ({ isOpen, onClose, onTransactionSuccess }) => {
                     {(activeTab === 'buy' || activeTab === 'sell') && (
                         <>
                             <div className="form-group">
-                                <label htmlFor="asset-type">Tipo de Ativo</label>
+                                <label htmlFor="asset-type">Tipo de Ativo (Filtro)</label>
                                 <select id="asset-type" value={selectedCategory} onChange={handleCategoryChange}>
                                     <option value="CRYPTO">Criptomoeda</option>
                                     <option value="STOCK_B3">Ação (Brasil)</option>
@@ -167,12 +224,37 @@ const AddAssetModal = ({ isOpen, onClose, onTransactionSuccess }) => {
                                     <option value="ETF_US">ETF (EUA)</option>
                                 </select>
                             </div>
-                            <div className="form-group">
-                                <label htmlFor="asset-ticker">Ativo / Ticker</label>
-                                <input type="text" id="asset-ticker" placeholder="Ex: BTC, PETR4, IVVB11, AAPL, SPY" value={ticker} onChange={(e) => setTicker(e.target.value)} />
+                            
+                            <div className="form-group search-group">
+                                <label htmlFor="asset-search">Buscar Ativo (Ticker ou Nome)</label>
+                                <input 
+                                    type="text" id="asset-search"
+                                    placeholder="Comece a digitar..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    autoComplete="off"
+                                />
+                                {isSearching && <div className="spinner"></div>}
+                                {searchResults.length > 0 && (
+                                    <ul className="search-results-list">
+                                        {searchResults.map((result, index) => (
+                                            <li key={`${result.ticker}-${index}`} onClick={() => handleSelectSearchResult(result)}>
+                                                <span className="result-ticker">{result.ticker}</span>
+                                                <span className="result-name">{result.name}</span>
+                                                <span className="result-market">{result.market || result.assetType}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                )}
                             </div>
+                            
                             <div className="form-group">
-                                <label htmlFor="asset-date">Data da {activeTab === 'buy' ? 'Compra' : 'Venda'}</label>
+                                <label>Ticker Selecionado</label>
+                                <input type="text" value={ticker} readOnly disabled />
+                            </div>
+
+                            <div className="form-group">
+                                <label htmlFor="asset-date">Data da Transação</label>
                                 <input type="date" id="asset-date" value={transactionDate} onChange={(e) => setTransactionDate(e.target.value)} />
                             </div>
                             <div className="form-group">
@@ -180,8 +262,11 @@ const AddAssetModal = ({ isOpen, onClose, onTransactionSuccess }) => {
                                 <input type="number" id="asset-quantity" step="any" value={quantity} onChange={(e) => setQuantity(e.target.value)} />
                             </div>
                             <div className="form-group">
-                                <label htmlFor="asset-price">Preço Unitário (R$ ou USD)</label>
-                                <input type="number" id="asset-price" step="any" value={pricePerUnit} onChange={(e) => setPricePerUnit(e.target.value)} />
+                                <label htmlFor="asset-price">Preço Unitário</label>
+                                <div className="price-input-wrapper">
+                                    <input type="number" id="asset-price" step="any" value={pricePerUnit} onChange={(e) => setPricePerUnit(e.target.value)} disabled={isFetchingPrice} />
+                                    {isFetchingPrice && <div className="spinner"></div>}
+                                </div>
                             </div>
                             <div className="form-group">
                                 <label htmlFor="asset-costs">Outros Custos (Opcional)</label>
@@ -191,47 +276,45 @@ const AddAssetModal = ({ isOpen, onClose, onTransactionSuccess }) => {
                     )}
 
                     {activeTab === 'fixedIncome' && (
-                        <>
+                       <>
+                           <div className="form-group">
+                               <label htmlFor="fi-name">Nome do Ativo</label>
+                               <input type="text" id="fi-name" placeholder="Ex: CDB PicPay 105%" value={fiName} onChange={(e) => setFiName(e.target.value)} />
+                           </div>
+                           <div className="form-group">
+                               <label htmlFor="fi-indexer">Indexador</label>
+                               <select id="fi-indexer" value={fiIndexer} onChange={(e) => setFiIndexer(e.target.value)}>
+                                   <option value="CDI">CDI</option>
+                                   <option value="IPCA">IPCA</option>
+                                   <option value="SELIC">Selic</option>
+                                   <option value="PRE_FIXED">Pré-fixado</option>
+                               </select>
+                           </div>
                             <div className="form-group">
-                                <label htmlFor="fi-name">Nome do Ativo</label>
-                                <input type="text" id="fi-name" placeholder="Ex: CDB PicPay 105%" value={fiName} onChange={(e) => setFiName(e.target.value)} />
-                            </div>
+                               <label htmlFor="fi-indexer-rate">Taxa Contratada (%) (Opcional)</label>
+                               <input type="number" id="fi-indexer-rate" step="any" placeholder="Ex: 110 para 110% do CDI" value={fiIndexerRate} onChange={(e) => setFiIndexerRate(e.target.value)} />
+                           </div>
+                           <div className="form-group">
+                               <label htmlFor="fi-purchase-date">Data da compra</label>
+                               <input type="date" id="fi-purchase-date" value={fiPurchaseDate} onChange={(e) => setFiPurchaseDate(e.target.value)} />
+                           </div>
+                           <div className="form-group">
+                               <label htmlFor="fi-initial-value">Valor Investido (R$)</label>
+                               <input type="number" id="fi-initial-value" step="any" placeholder="0,00" value={fiInitialValue} onChange={(e) => setFiInitialValue(e.target.value)} />
+                           </div>
                             <div className="form-group">
-                                <label htmlFor="fi-indexer">Indexador</label>
-                                <select id="fi-indexer" value={fiIndexer} onChange={(e) => setFiIndexer(e.target.value)}>
-                                    <option value="CDI">CDI</option>
-                                    <option value="IPCA">IPCA</option>
-                                    <option value="SELIC">Selic</option>
-                                    <option value="PRE_FIXED">Pré-fixado</option>
-                                </select>
-                            </div>
-                             <div className="form-group">
-                                {/* CORREÇÃO 3: Rótulo atualizado para indicar que é opcional */}
-                                <label htmlFor="fi-indexer-rate">Taxa Contratada (%) (Opcional)</label>
-                                <input type="number" id="fi-indexer-rate" step="any" placeholder="Ex: 110 para 110% do CDI" value={fiIndexerRate} onChange={(e) => setFiIndexerRate(e.target.value)} />
-                            </div>
-                            <div className="form-group">
-                                <label htmlFor="fi-purchase-date">Data da compra</label>
-                                <input type="date" id="fi-purchase-date" value={fiPurchaseDate} onChange={(e) => setFiPurchaseDate(e.target.value)} />
-                            </div>
-                            <div className="form-group">
-                                <label htmlFor="fi-initial-value">Valor Investido (R$)</label>
-                                <input type="number" id="fi-initial-value" step="any" placeholder="0,00" value={fiInitialValue} onChange={(e) => setFiInitialValue(e.target.value)} />
-                            </div>
-                             <div className="form-group">
-                                <label htmlFor="fi-maturity-date">Data de vencimento</label>
-                                <input type="date" id="fi-maturity-date" value={fiMaturityDate} onChange={(e) => setFiMaturityDate(e.target.value)} />
-                            </div>
-                            <div className="form-group">
-                                <label htmlFor="fi-daily-liquidity">Possui liquidez diária?</label>
-                                <input type="checkbox" id="fi-daily-liquidity" checked={fiDailyLiquidity} onChange={(e) => setFiDailyLiquidity(e.target.checked)} />
-                            </div>
-                        </>
+                               <label htmlFor="fi-maturity-date">Data de vencimento</label>
+                               <input type="date" id="fi-maturity-date" value={fiMaturityDate} onChange={(e) => setFiMaturityDate(e.target.value)} />
+                           </div>
+                           <div className="form-group">
+                               <label>Possui liquidez diária?</label>
+                               <input type="checkbox" id="fi-daily-liquidity" checked={fiDailyLiquidity} onChange={(e) => setFiDailyLiquidity(e.target.checked)} />
+                           </div>
+                       </>
                     )}
 
                     {error && <p className="error-message">{error}</p>}
-
-                    <button type="submit" className="submit-button" disabled={isLoading}>
+                    <button type="submit" className="submit-button" disabled={isLoading || isSearching || isFetchingPrice}>
                         {isLoading ? 'Adicionando...' : 'Adicionar Transação'}
                     </button>
                 </form>
