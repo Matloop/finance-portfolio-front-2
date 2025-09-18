@@ -15,9 +15,9 @@ const COLORS = {
 };
 
 const LABEL_MAP = {
-    brasil: 'Brasil',
-    eua: 'EUA',
-    cripto: 'Cripto',
+    brazil: 'Brasil', // Chave 'brasil' em minúsculas
+    usa: 'EUA',
+    crypto: 'Cripto',
     'ações': 'Ações',
     'etfs': 'ETFs',
     'renda fixa': 'Renda Fixa',
@@ -62,7 +62,11 @@ const Dashboard = ({
             currentView.path.forEach(key => { dataNode = dataNode[key]?.children || {}; });
             
             const children = dataNode || {};
-            const labels = Object.keys(children).map(getFriendlyLabel);
+            
+            // ***** CORREÇÃO APLICADA AQUI *****
+            // Mapeamos as chaves (ex: "brazil") para seus nomes amigáveis (ex: "Brasil")
+            const labels = Object.keys(children).map(key => getFriendlyLabel(key));
+            
             const data = Object.values(children).map(node => node.percentage);
             const colorKey = currentView.path.length > 0 ? currentView.path[0] : 'category';
             const backgroundColor = COLORS[colorKey] || COLORS.category;
