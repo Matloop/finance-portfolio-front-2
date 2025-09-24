@@ -24,6 +24,20 @@ const LABEL_MAP = {
     'criptomoedas': 'Criptomoedas',
 };
 
+const formatChartDate = (dateString) => {
+    if (!dateString || !dateString.includes('/')) return dateString;
+
+    const [month, year] = dateString.split('/');
+    const monthMap = {
+        'Jan': 'Jan', 'Feb': 'Fev', 'Mar': 'Mar', 'Apr': 'Abr', 
+        'May': 'Mai', 'Jun': 'Jun', 'Jul': 'Jul', 'Aug': 'Ago', 
+        'Sep': 'Set', 'Oct': 'Out', 'Nov': 'Nov', 'Dec': 'Dez'
+    };
+    
+    const translatedMonth = monthMap[month] || month;
+    return `${translatedMonth}/${year}`;
+};
+
 const getFriendlyLabel = (label) => LABEL_MAP[label.toLowerCase()] || label;
 
 // Função de formatação de moeda para ser usada nos tooltips
@@ -120,10 +134,11 @@ const Dashboard = ({
     const barChartData = useMemo(() => {
         if (!evolutionData || evolutionData.length === 0) return { labels: [], datasets: [] };
         
-        const labels = evolutionData.map(d => d.date);
+        const labels = evolutionData.map(d => formatChartDate(d.date));
+        
         const valorAplicadoData = evolutionData.map(d => d.valorAplicado);
         const ganhoCapitalData = evolutionData.map(d => d.patrimonio - d.valorAplicado);
-
+            
         return {
             labels,
             datasets: [
