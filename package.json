@@ -12,6 +12,7 @@
   "dependencies": {
     "@astrojs/react": "^3.0.10",
     "@astrojs/tailwind": "^5.1.0",
+    "@nivo/pie": "^0.99.0",
     "astro": "^4.4.15",
     "chart.js": "^4.4.2",
     "gsap": "^3.13.0",

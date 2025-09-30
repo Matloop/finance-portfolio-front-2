@@ -14,11 +14,12 @@
     }
 }
 
+/* --- CORREÇÃO APLICADA AQUI --- */
 .chart-card {
     display: flex;
     flex-direction: column;
     position: relative;
-    overflow: visible;
+    overflow: hidden; /* Alterado de 'visible' para 'hidden' */
 }
 
 .chart-card::after {
@@ -52,9 +53,8 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    min-height: 350px;
+    height: 400px;
     position: relative;
-    padding: 1rem 0;
 }
 
 
@@ -119,64 +119,7 @@
     transform: translateY(0);
 }
 
-.loading-text,
-.error-message {
-    text-align: center;
-    padding: 20px;
-    font-weight: 500;
-}
-
-
-/* === 3. THEME COLORS === */
-
-/* --- Light Mode --- */
-.chart-header {
-    border-color: transparent;
-}
-
-.loading-text, .error-message {
-    color: #6b7280;
-}
-
-/* --- Dark Mode --- */
-.dark .chart-header {
-    border-color: transparent;
-}
-
-.dark .loading-text, .dark .error-message {
-    color: #94a3b8;
-}
-
-/* === 4. ESTADO MESSAGES === */
-.info-message {
-    padding: 0.5rem 1rem;
-    border-radius: 0.375rem;
-    font-weight: 500;
-    text-align: center;
-}
-
-/* Light Mode */
-.info-message {
-    background-color: #f3f4f6;
-    color: #4b5563;
-}
-
-/* Dark Mode */
-.dark .info-message {
-    background-color: #334155;
-    color: #cbd5e1;
-}
-
-.chart-wrapper {
-    flex-grow: 1;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 350px;
-    position: relative;
-}
-
-/* Estilos para mensagens de estado dentro dos cards */
+/* === 3. ESTADO MESSAGES === */
 .loading-text,
 .info-message,
 .error-message {
@@ -196,7 +139,7 @@
 .dark .info-message { background-color: #334155; color: #cbd5e1; }
 .dark .error-message { color: #fecaca; background-color: #7f1d1d; }
 
-/* === 5. CUSTOM TOOLTIP RECHARTS === */
+/* === 4. CUSTOM TOOLTIP RECHARTS === */
 .custom-tooltip {
     background: rgba(255, 255, 255, 0.98);
     border: 1px solid #e5e7eb;

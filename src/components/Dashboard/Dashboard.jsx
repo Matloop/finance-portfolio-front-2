@@ -1,20 +1,14 @@
 // --- components/Dashboard/Dashboard.jsx ---
 import React, { useState, useEffect, useMemo } from 'react';
-import { Pie } from 'react-chartjs-2';
-import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
+// IMPORTAÇÕES REMOVIDAS de react-chartjs-2 e chart.js
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Legend as RechartsLegend } from 'recharts';
+import AllocationChart from './AllocationChart'; // IMPORTADO o novo componente para o gráfico de pizza
 import './dashboard.css';
 
-ChartJS.register(ArcElement, Tooltip, Legend);
+// REGISTRO REMOVIDO do ChartJS.
 
 // --- Constantes e Funções Auxiliares ---
-const COLORS = {
-    category: ['#3b82f6', '#16a34a', '#f97316', '#9333ea'],
-    brazil: ['#3498db', '#1abc9c', '#27ae60'],
-    usa: ['#2ecc71', '#16a085'],
-    crypto: ['#f7931a', '#627eea', '#f3ba2f', '#26a17b', '#e84142', '#a6b9c7', '#222222'],
-};
-
+// As constantes de cores foram movidas para AllocationChart.jsx para encapsulamento.
 const LABEL_MAP = {
     brazil: 'Brasil',
     usa: 'EUA',
@@ -44,7 +38,7 @@ const getFriendlyLabel = (label) => LABEL_MAP[label.toLowerCase()] || label;
 const formatCurrency = (value = 0) =>
     Number(value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
-// Componente de Tooltip customizado para Recharts
+// Componente de Tooltip customizado para Recharts (permanece igual)
 const CustomTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {
         const data = payload[0].payload;
@@ -66,6 +60,7 @@ const CustomTooltip = ({ active, payload }) => {
     return null;
 };
 
+
 // --- Componente Principal ---
 const Dashboard = ({ 
     percentagesData, 
@@ -75,7 +70,7 @@ const Dashboard = ({
     evolutionError 
 }) => {
     const [viewStack, setViewStack] = useState([{ path: [], title: 'Alocação por Categoria' }]);
-    const [pieChartData, setPieChartData] = useState({ labels: [], datasets: [] });
+    // ESTADO REMOVIDO: O estado pieChartData não é mais necessário.
     const [isDarkMode, setIsDarkMode] = useState(false);
 
     useEffect(() => {
@@ -86,31 +81,26 @@ const Dashboard = ({
         return () => observer.disconnect();
     }, []);
 
-    useEffect(() => {
-        if (percentagesData) {
-            const currentView = viewStack[viewStack.length - 1];
-            let dataNode = percentagesData;
-            currentView.path.forEach(key => { dataNode = dataNode[key]?.children || {}; });
-            
-            const children = dataNode || {};
-            const labels = Object.keys(children).map(key => getFriendlyLabel(key));
-            const data = Object.values(children).map(node => node.percentage);
-            const colorKey = currentView.path.length > 0 ? currentView.path[0] : 'category';
-            const backgroundColor = COLORS[colorKey] || COLORS.category;
-
-            setPieChartData({ labels, datasets: [{ data, backgroundColor }] });
+    // LÓGICA SIMPLIFICADA para obter os dados atuais para o gráfico de pizza.
+    const { currentDataNode, colorKey } = useMemo(() => {
+        if (!percentagesData) {
+            return { currentDataNode: null, colorKey: 'category' };
         }
-    }, [percentagesData, viewStack]);
-
-    const handlePieClick = (event, elements) => {
-        if (!elements.length) return;
         const currentView = viewStack[viewStack.length - 1];
         let dataNode = percentagesData;
         currentView.path.forEach(key => { dataNode = dataNode[key]?.children || {}; });
-        const originalLabel = Object.keys(dataNode)[elements[0].index];
-        const clickedNode = dataNode[originalLabel];
+        const cKey = currentView.path.length > 0 ? currentView.path[0] : 'category';
+        return { currentDataNode: dataNode, colorKey: cKey };
+    }, [percentagesData, viewStack]);
+
+    // O useEffect que formatava os dados para o Chart.js foi REMOVIDO.
+
+    // FUNÇÃO ATUALIZADA para lidar com o clique vindo do componente Nivo.
+    const handlePieClick = (originalLabel) => {
+        const clickedNode = currentDataNode?.[originalLabel];
         
         if (clickedNode && clickedNode.children && Object.keys(clickedNode.children).length > 0) {
+            const currentView = viewStack[viewStack.length - 1];
             const newPath = [...currentView.path, originalLabel];
             const newTitle = `Alocação em ${getFriendlyLabel(originalLabel)}`;
             setViewStack([...viewStack, { path: newPath, title: newTitle }]);
@@ -123,24 +113,9 @@ const Dashboard = ({
         }
     };
 
-    const pieOptions = useMemo(() => ({
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-            legend: {
-                position: 'top',
-                labels: { color: isDarkMode ? '#e2e8f0' : '#4b5563', font: { size: 14 } }
-            },
-            tooltip: {
-                callbacks: {
-                    label: (context) => `${context.label || ''}: ${Number(context.parsed).toFixed(2)}%`
-                }
-            }
-        },
-        onClick: handlePieClick,
-    }), [isDarkMode, viewStack, percentagesData]);
+    // Objeto de opções 'pieOptions' para o Chart.js foi REMOVIDO.
 
-    // Transformar dados para Recharts
+    // Transformar dados para Recharts (permanece igual)
     const rechartsData = useMemo(() => {
         if (!evolutionData || evolutionData.length === 0) return [];
         
@@ -165,9 +140,17 @@ const Dashboard = ({
                 </div>
                 <div className="chart-wrapper">
                     {isPercentagesLoading && <p className="loading-text">Carregando alocação...</p>}
-                    {!isPercentagesLoading && percentagesData && Object.keys(percentagesData).length > 0 && (
-                        <Pie data={pieChartData} options={pieOptions} />
+
+                    {!isPercentagesLoading && currentDataNode && Object.keys(currentDataNode).length > 0 && (
+                        // GRÁFICO SUBSTITUÍDO pelo novo componente AllocationChart (Nivo)
+                        <AllocationChart 
+                            dataNode={currentDataNode}
+                            colorKey={colorKey}
+                            onSliceClick={handlePieClick}
+                            isDarkMode={isDarkMode}
+                        />
                     )}
+
                     {!isPercentagesLoading && (!percentagesData || Object.keys(percentagesData).length === 0) && (
                         <p className="info-message">Adicione ativos para ver a alocação.</p>
                     )}
