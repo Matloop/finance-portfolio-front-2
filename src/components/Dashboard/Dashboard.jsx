@@ -1,10 +1,11 @@
 // --- components/Dashboard/Dashboard.jsx ---
 import React, { useState, useEffect, useMemo } from 'react';
-import { Pie, Bar } from 'react-chartjs-2';
-import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title } from 'chart.js';
+import { Pie } from 'react-chartjs-2';
+import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Legend as RechartsLegend } from 'recharts';
 import './dashboard.css';
 
-ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title);
+ChartJS.register(ArcElement, Tooltip, Legend);
 
 // --- Constantes e Funções Auxiliares ---
 const COLORS = {
@@ -15,7 +16,7 @@ const COLORS = {
 };
 
 const LABEL_MAP = {
-    brazil: 'Brasil', // Chave 'brasil' em minúsculas
+    brazil: 'Brasil',
     usa: 'EUA',
     crypto: 'Cripto',
     'ações': 'Ações',
@@ -40,10 +41,30 @@ const formatChartDate = (dateString) => {
 
 const getFriendlyLabel = (label) => LABEL_MAP[label.toLowerCase()] || label;
 
-// Função de formatação de moeda para ser usada nos tooltips
 const formatCurrency = (value = 0) =>
     Number(value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
+// Componente de Tooltip customizado para Recharts
+const CustomTooltip = ({ active, payload }) => {
+    if (active && payload && payload.length) {
+        const data = payload[0].payload;
+        return (
+            <div className="custom-tooltip">
+                <p className="tooltip-date">{data.date}</p>
+                <p className="tooltip-item valor-aplicado">
+                    Valor Aplicado: {formatCurrency(data.valorAplicado)}
+                </p>
+                <p className="tooltip-item ganho-capital">
+                    Ganho Capital: {formatCurrency(data.ganhoCapital)}
+                </p>
+                <p className="tooltip-item patrimonio">
+                    Patrimônio: {formatCurrency(data.patrimonio)}
+                </p>
+            </div>
+        );
+    }
+    return null;
+};
 
 // --- Componente Principal ---
 const Dashboard = ({ 
@@ -53,11 +74,8 @@ const Dashboard = ({
     isEvolutionLoading,
     evolutionError 
 }) => {
-    // Estado para a navegação do gráfico de pizza
     const [viewStack, setViewStack] = useState([{ path: [], title: 'Alocação por Categoria' }]);
     const [pieChartData, setPieChartData] = useState({ labels: [], datasets: [] });
-    
-    // Estado para detectar o tema (claro/escuro)
     const [isDarkMode, setIsDarkMode] = useState(false);
 
     useEffect(() => {
@@ -68,7 +86,6 @@ const Dashboard = ({
         return () => observer.disconnect();
     }, []);
 
-    // Efeito para atualizar o gráfico de pizza
     useEffect(() => {
         if (percentagesData) {
             const currentView = viewStack[viewStack.length - 1];
@@ -76,11 +93,7 @@ const Dashboard = ({
             currentView.path.forEach(key => { dataNode = dataNode[key]?.children || {}; });
             
             const children = dataNode || {};
-            
-            // ***** CORREÇÃO APLICADA AQUI *****
-            // Mapeamos as chaves (ex: "brazil") para seus nomes amigáveis (ex: "Brasil")
             const labels = Object.keys(children).map(key => getFriendlyLabel(key));
-            
             const data = Object.values(children).map(node => node.percentage);
             const colorKey = currentView.path.length > 0 ? currentView.path[0] : 'category';
             const backgroundColor = COLORS[colorKey] || COLORS.category;
@@ -89,7 +102,6 @@ const Dashboard = ({
         }
     }, [percentagesData, viewStack]);
 
-    // Lógica de "drill-down" do gráfico de pizza
     const handlePieClick = (event, elements) => {
         if (!elements.length) return;
         const currentView = viewStack[viewStack.length - 1];
@@ -105,14 +117,12 @@ const Dashboard = ({
         }
     };
 
-    // Lógica do botão "Voltar"
     const handleBack = () => {
         if (viewStack.length > 1) {
             setViewStack(viewStack.slice(0, -1));
         }
     };
 
-    // Opções do gráfico de pizza
     const pieOptions = useMemo(() => ({
         responsive: true,
         maintainAspectRatio: false,
@@ -130,84 +140,17 @@ const Dashboard = ({
         onClick: handlePieClick,
     }), [isDarkMode, viewStack, percentagesData]);
 
-    // Dados do gráfico de barras
-    const barChartData = useMemo(() => {
-        if (!evolutionData || evolutionData.length === 0) return { labels: [], datasets: [] };
+    // Transformar dados para Recharts
+    const rechartsData = useMemo(() => {
+        if (!evolutionData || evolutionData.length === 0) return [];
         
-        const labels = evolutionData.map(d => formatChartDate(d.date));
-        
-        const valorAplicadoData = evolutionData.map(d => d.valorAplicado);
-        const ganhoCapitalData = evolutionData.map(d => d.patrimonio - d.valorAplicado);
-            
-        return {
-            labels,
-            datasets: [
-                {
-                    label: 'Ganho Capital',
-                    data: ganhoCapitalData,
-                    backgroundColor: isDarkMode ? '#4ade80' : '#28a745',
-                    order: 1,
-                },
-                {
-                    label: 'Valor Aplicado',
-                    data: valorAplicadoData,
-                    backgroundColor: isDarkMode ? '#60a5fa' : '#3b82f6',
-                    order: 2,
-                },
-            ],
-        };
-    }, [evolutionData, isDarkMode]);
-    
-    // Opções do gráfico de barras (com o tooltip corrigido)
-    const barChartOptions = useMemo(() => ({
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-            legend: {
-                position: 'top',
-                labels: { color: isDarkMode ? '#e2e8f0' : '#4b5563' }
-            },
-            tooltip: {
-                mode: 'index',
-                intersect: false,
-                callbacks: {
-                    // ***** CORREÇÃO APLICADA AQUI *****
-                    label: function(context) {
-                        const label = context.dataset.label || '';
-                        const value = context.parsed.y;
-                        return value !== null ? `${label}: ${formatCurrency(value)}` : label;
-                    },
-                    footer: (tooltipItems) => {
-                        const index = tooltipItems[0].dataIndex;
-                        if (evolutionData && evolutionData[index]) {
-                            const patrimonio = evolutionData[index].patrimonio;
-                            return `Patrimônio: ${formatCurrency(patrimonio)}`;
-                        }
-                        return '';
-                    }
-                }
-            }
-        },
-        scales: {
-            x: {
-                stacked: true,
-                ticks: { color: isDarkMode ? '#94a3b8' : '#6b7280' },
-                grid: { display: false }
-            },
-            y: {
-                stacked: true,
-                ticks: {
-                    color: isDarkMode ? '#94a3b8' : '#6b7280',
-                    callback: (value) => {
-                        if (Math.abs(value) >= 1000000) return `${(value / 1000000).toFixed(1)}M`;
-                        if (Math.abs(value) >= 1000) return `${value / 1000}k`;
-                        return value;
-                    }
-                },
-                grid: { color: isDarkMode ? '#334155' : '#e5e7eb' }
-            }
-        }
-    }), [evolutionData, isDarkMode]);
+        return evolutionData.map(d => ({
+            date: formatChartDate(d.date),
+            valorAplicado: d.valorAplicado,
+            ganhoCapital: d.patrimonio - d.valorAplicado,
+            patrimonio: d.patrimonio
+        }));
+    }, [evolutionData]);
 
     return (
         <div className="dashboard-container">
@@ -216,7 +159,7 @@ const Dashboard = ({
                     <h2>{viewStack[viewStack.length - 1].title}</h2>
                     {viewStack.length > 1 && (
                         <button className="back-button" onClick={handleBack}>
-                            &larr; Voltar
+                            ← Voltar
                         </button>
                     )}
                 </div>
@@ -235,7 +178,7 @@ const Dashboard = ({
                 <div className="chart-header">
                     <h2>Evolução do Patrimônio</h2>
                 </div>
-                 <div className="chart-wrapper">
+                <div className="chart-wrapper">
                     {isEvolutionLoading && <p className="loading-text">Carregando evolução...</p>}
                     
                     {!isEvolutionLoading && evolutionError && (
@@ -245,12 +188,67 @@ const Dashboard = ({
                         </div>
                     )}
 
-                    {!isEvolutionLoading && !evolutionError && evolutionData && evolutionData.length > 0 && (
-                        <Bar options={barChartOptions} data={barChartData} />
+                    {!isEvolutionLoading && !evolutionError && rechartsData.length > 0 && (
+                        <ResponsiveContainer width="100%" height="100%">
+                            <AreaChart data={rechartsData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                                <defs>
+                                    <linearGradient id="colorValorAplicado" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor={isDarkMode ? "#60a5fa" : "#3b82f6"} stopOpacity={0.8}/>
+                                        <stop offset="95%" stopColor={isDarkMode ? "#60a5fa" : "#3b82f6"} stopOpacity={0.1}/>
+                                    </linearGradient>
+                                    <linearGradient id="colorGanhoCapital" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor={isDarkMode ? "#4ade80" : "#10b981"} stopOpacity={0.8}/>
+                                        <stop offset="95%" stopColor={isDarkMode ? "#4ade80" : "#10b981"} stopOpacity={0.1}/>
+                                    </linearGradient>
+                                </defs>
+                                <CartesianGrid 
+                                    strokeDasharray="3 3" 
+                                    stroke={isDarkMode ? "#334155" : "#e5e7eb"}
+                                    vertical={false}
+                                />
+                                <XAxis 
+                                    dataKey="date" 
+                                    stroke={isDarkMode ? "#94a3b8" : "#6b7280"}
+                                    style={{ fontSize: '0.75rem' }}
+                                />
+                                <YAxis 
+                                    stroke={isDarkMode ? "#94a3b8" : "#6b7280"}
+                                    style={{ fontSize: '0.75rem' }}
+                                    tickFormatter={(value) => {
+                                        if (Math.abs(value) >= 1000000) return `${(value / 1000000).toFixed(1)}M`;
+                                        if (Math.abs(value) >= 1000) return `${(value / 1000).toFixed(0)}k`;
+                                        return value;
+                                    }}
+                                />
+                                <RechartsTooltip content={<CustomTooltip />} />
+                                <RechartsLegend 
+                                    wrapperStyle={{ fontSize: '0.875rem', paddingTop: '1rem' }}
+                                    iconType="circle"
+                                />
+                                <Area 
+                                    type="monotone" 
+                                    dataKey="valorAplicado" 
+                                    stroke={isDarkMode ? "#60a5fa" : "#3b82f6"}
+                                    strokeWidth={2}
+                                    fillOpacity={1} 
+                                    fill="url(#colorValorAplicado)" 
+                                    name="Valor Aplicado"
+                                />
+                                <Area 
+                                    type="monotone" 
+                                    dataKey="ganhoCapital" 
+                                    stroke={isDarkMode ? "#4ade80" : "#10b981"}
+                                    strokeWidth={2}
+                                    fillOpacity={1} 
+                                    fill="url(#colorGanhoCapital)" 
+                                    name="Ganho Capital"
+                                />
+                            </AreaChart>
+                        </ResponsiveContainer>
                     )}
 
                     {!isEvolutionLoading && !evolutionError && (!evolutionData || evolutionData.length === 0) && (
-                         <p className="info-message">Adicione transações para ver a evolução do seu patrimônio.</p>
+                        <p className="info-message">Adicione transações para ver a evolução do seu patrimônio.</p>
                     )}
                 </div>
             </div>
