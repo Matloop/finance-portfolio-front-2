@@ -1,4 +1,3 @@
-// --- components/DashboardApp.jsx ---
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import './app.css';
 import Dashboard from './Dashboard/Dashboard.jsx';
@@ -9,29 +8,27 @@ import { API_BASE_URL } from '../../apiConfig.js';
 import ThemeToggleButton from '../ThemeToggleButton.jsx';
 
 function DashboardApp() {
-    // --- Estados para Componentes e UI ---
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [dataRefreshTrigger, setDataRefreshTrigger] = useState(0);
     
-    // --- Estados de Dados ---
     const [dashboardData, setDashboardData] = useState(null);
     const [evolutionData, setEvolutionData] = useState(null);
     
-    // --- Estados de Carregamento (Loading) ---
     const [isLoading, setIsLoading] = useState(true);
     const [isEvolutionLoading, setIsEvolutionLoading] = useState(true);
     
-    // --- Estados de Erro ---
     const [dashboardError, setDashboardError] = useState(null);
     const [evolutionError, setEvolutionError] = useState(null);
 
-    // --- Estados para a funcionalidade de Importação ---
     const [isImporting, setIsImporting] = useState(false);
     const [importResult, setImportResult] = useState(null);
-    const fileInputRef = useRef(null); // Referência para o input de arquivo escondido
+    const fileInputRef = useRef(null);
 
-    // Função centralizada para buscar todos os dados
+    // Refs para animações GSAP
+    const headerRef = useRef(null);
+    const mainRef = useRef(null);
+
     const fetchData = useCallback(async () => {
         setIsLoading(true);
         setIsEvolutionLoading(true);
@@ -71,12 +68,58 @@ function DashboardApp() {
         fetchData();
     }, [fetchData, dataRefreshTrigger]);
 
+    // Animações de entrada usando GSAP
+    useEffect(() => {
+        if (window.gsap && headerRef.current && mainRef.current) {
+            window.gsap.from(headerRef.current, {
+                y: -50,
+                opacity: 0,
+                duration: 0.6,
+                ease: 'power3.out'
+            });
+
+            window.gsap.from(mainRef.current.children, {
+                y: 30,
+                opacity: 0,
+                duration: 0.6,
+                stagger: 0.15,
+                ease: 'power3.out',
+                delay: 0.2
+            });
+        }
+    }, []);
+
+    // Animação ao atualizar dados
+    useEffect(() => {
+        if (!isLoading && !isEvolutionLoading && window.gsap && mainRef.current) {
+            window.gsap.from(mainRef.current.children, {
+                scale: 0.95,
+                opacity: 0,
+                duration: 0.4,
+                stagger: 0.1,
+                ease: 'back.out(1.2)',
+                clearProps: 'all'
+            });
+        }
+    }, [isLoading, isEvolutionLoading, dataRefreshTrigger]);
+
     const handleTransactionSuccess = () => {
         setDataRefreshTrigger(prev => prev + 1);
     };
 
     const handleRefreshAssets = async () => {
         setIsRefreshing(true);
+        
+        // Animação de rotação do botão
+        const refreshBtn = document.querySelector('.refresh-button');
+        if (window.gsap && refreshBtn) {
+            window.gsap.to(refreshBtn, {
+                rotation: 360,
+                duration: 1,
+                ease: 'power2.inOut'
+            });
+        }
+
         try {
             const response = await fetch(`${API_BASE_URL}/api/portfolio/refresh`, { method: 'POST' });
             if (!response.ok) throw new Error('Falha ao solicitar a atualização no backend.');
@@ -87,7 +130,6 @@ function DashboardApp() {
         }
     };
 
-    // --- Lógica de Importação de CSV ---
     const handleImportClick = () => {
         fileInputRef.current.click();
     };
@@ -111,38 +153,37 @@ function DashboardApp() {
             setImportResult(result);
 
             if (response.ok && result.successCount > 0) {
-                handleTransactionSuccess(); // Aciona o refresh dos dados do dashboard
+                handleTransactionSuccess();
             }
 
         } catch (err) {
             setImportResult({ successCount: 0, errorCount: 1, errors: ['Erro de rede ao enviar o arquivo.'] });
         } finally {
             setIsImporting(false);
-            event.target.value = null; // Limpa o input
+            event.target.value = null;
         }
     };
     
     return (
         <div className="app-container">
-            <header className="app-header">
+            <header className="app-header" ref={headerRef}>
                 <h1>Minha Carteira</h1>
                 <div className="header-actions">
                     <ThemeToggleButton />
                     <button
-                        className="refresh-button"
+                        className="refresh-button transition-smooth"
                         onClick={handleRefreshAssets}
                         disabled={isRefreshing || isLoading || isEvolutionLoading || isImporting}
                     >
                         {isRefreshing ? 'Atualizando...' : 'Atualizar Cotações'}
                     </button>
-                     <a
+                    <a
                         href={`${API_BASE_URL}/api/csv/export/transactions`}
-                        className="export-button"
+                        className="export-button transition-smooth"
                         download="carteira_transacoes.csv"
                     >
                         Exportar CSV
                     </a>
-                    {/* Input de arquivo escondido */}
                     <input
                         type="file"
                         ref={fileInputRef}
@@ -151,21 +192,23 @@ function DashboardApp() {
                         style={{ display: 'none' }}
                     />
                     <button
-                        className="import-button"
+                        className="import-button transition-smooth"
                         onClick={handleImportClick}
                         disabled={isImporting}
                     >
                         {isImporting ? 'Importando...' : 'Importar CSV'}
                     </button>
-                    <button className="add-button" onClick={() => setIsModalOpen(true)}>
+                    <button 
+                        className="add-button transition-smooth" 
+                        onClick={() => setIsModalOpen(true)}
+                    >
                         Adicionar Ativo
                     </button>
                 </div>
             </header>
-            <main>
-                {/* Painel de Resultado da Importação */}
+            <main ref={mainRef}>
                 {importResult && (
-                    <div className={`import-summary ${importResult.errorCount > 0 ? 'error' : 'success'}`}>
+                    <div className={`import-summary animate-fade-in ${importResult.errorCount > 0 ? 'error' : 'success'}`}>
                         <p>Importação concluída: {importResult.successCount} sucesso(s), {importResult.errorCount} erro(s).</p>
                         {importResult.errors && importResult.errors.length > 0 && (
                             <ul>
@@ -203,4 +246,4 @@ function DashboardApp() {
     );
 }
 
-export default DashboardApp;    
+export default DashboardApp;
