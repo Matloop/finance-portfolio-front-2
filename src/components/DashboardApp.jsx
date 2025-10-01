@@ -8,9 +8,9 @@ import InvestedValueModal from './InvestedValueModal/InvestedValueModal.jsx';
 import { API_BASE_URL } from '../../apiConfig.js';
 import ThemeToggleButton from '../ThemeToggleButton.jsx';
 
-// --- Placeholder Modals ---
-// Para que o código funcione sem criar novos arquivos imediatamente,
-// definimos componentes simples de modal aqui.
+// --- Componentes Placeholder ---
+// Estes componentes estão aqui para que o app funcione.
+// O ideal é movê-los para seus próprios arquivos em `src/components/`
 const EditAssetModal = ({ isOpen, onClose, asset }) => {
     if (!isOpen) return null;
     return (
@@ -143,25 +143,86 @@ function DashboardApp() {
 
     const confirmDelete = async () => {
         if (!selectedAsset) return;
-        // Lógica da API para deletar (simulada por enquanto)
-        console.log("Deletando ativo:", selectedAsset.ticker || selectedAsset.name);
-        // Exemplo: await fetch(`${API_BASE_URL}/api/assets/${selectedAsset.ticker}`, { method: 'DELETE' });
+
+        const identifier = selectedAsset.ticker || selectedAsset.name;
         
-        alert(`Ativo ${selectedAsset.ticker || selectedAsset.name} excluído com sucesso! (Simulação)`);
-        
-        // Fechar modal e atualizar dados
-        setIsDeleteModalOpen(false);
-        setSelectedAsset(null);
-        handleTransactionSuccess();
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/portfolio/assets/${identifier}?assetType=${selectedAsset.assetType}`, {
+                method: 'DELETE',
+            });
+
+            if (!response.ok) {
+                throw new Error('Falha ao excluir o ativo no servidor.');
+            }
+            
+            // Dispara a atualização dos dados após a exclusão
+            handleTransactionSuccess();
+
+        } catch (error) {
+            console.error("Erro ao deletar ativo:", error);
+            alert('Não foi possível excluir o ativo. Tente novamente.');
+        } finally {
+            // Fecha o modal e limpa o ativo selecionado em qualquer cenário
+            setIsDeleteModalOpen(false);
+            setSelectedAsset(null);
+        }
     };
 
-    const handleRefreshAssets = async () => { /* ... (código existente) ... */ };
-    const handleImportClick = () => { /* ... (código existente) ... */ };
-    const handleFileImport = async (event) => { /* ... (código existente) ... */ };
+    const handleRefreshAssets = async () => {
+        setIsRefreshing(true);
+        const refreshBtn = document.querySelector('.refresh-button');
+        if (window.gsap && refreshBtn) {
+            window.gsap.to(refreshBtn, { rotation: 360, duration: 1, ease: 'power2.inOut' });
+        }
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/portfolio/refresh`, { method: 'POST' });
+            if (!response.ok) throw new Error('Falha ao solicitar a atualização no backend.');
+            setTimeout(() => setDataRefreshTrigger(prev => prev + 1), 2000);
+        } catch (err) {
+            alert('Não foi possível atualizar as cotações. Tente novamente.');
+            setIsRefreshing(false);
+        }
+    };
+
+    const handleImportClick = () => {
+        fileInputRef.current.click();
+    };
+
+    const handleFileImport = async (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+        setIsImporting(true);
+        setImportResult(null);
+        const formData = new FormData();
+        formData.append('file', file);
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/csv/import/transactions`, { method: 'POST', body: formData });
+            const result = await response.json();
+            setImportResult(result);
+            if (response.ok && result.successCount > 0) {
+                handleTransactionSuccess();
+            }
+        } catch (err) {
+            setImportResult({ successCount: 0, errorCount: 1, errors: ['Erro de rede ao enviar o arquivo.'] });
+        } finally {
+            setIsImporting(false);
+            event.target.value = null;
+        }
+    };
 
     // --- Hooks de Animação ---
-    useEffect(() => { /* ... (código GSAP existente) ... */ }, []);
-    useEffect(() => { /* ... (código GSAP existente) ... */ }, [isLoading, isEvolutionLoading, dataRefreshTrigger]);
+    useEffect(() => {
+        if (window.gsap && headerRef.current && mainRef.current) {
+            window.gsap.from(headerRef.current, { y: -50, opacity: 0, duration: 0.6, ease: 'power3.out' });
+            window.gsap.from(mainRef.current.children, { y: 30, opacity: 0, duration: 0.6, stagger: 0.15, ease: 'power3.out', delay: 0.2 });
+        }
+    }, []);
+
+    useEffect(() => {
+        if (!isLoading && !isEvolutionLoading && window.gsap && mainRef.current) {
+            window.gsap.from(mainRef.current.children, { scale: 0.95, opacity: 0, duration: 0.4, stagger: 0.1, ease: 'back.out(1.2)', clearProps: 'all' });
+        }
+    }, [isLoading, isEvolutionLoading, dataRefreshTrigger]);
 
     return (
         <div className="app-container">
