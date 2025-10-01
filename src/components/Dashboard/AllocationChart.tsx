@@ -1,6 +1,7 @@
 // --- components/Dashboard/AllocationChart.tsx ---
 import React, { useMemo } from 'react';
 import { ResponsivePie } from '@nivo/pie';
+import { getFriendlyLabel } from '../../utils/labelUtils';
 
 // --- DEFINIÇÃO DE TIPOS ---
 interface ChartNode {
@@ -26,34 +27,16 @@ const COLORS = {
     crypto: ['#f7931a', '#627eea', '#f3ba2f', '#26a17b', '#e84142', '#a6b9c7', '#222222'],
 };
 
-const LABEL_MAP: { [key: string]: string } = {
-    brazil: 'Brasil',
-    usa: 'EUA',
-    crypto: 'Cripto',
-    'ações': 'Ações',
-    'etfs': 'ETFs',
-    'renda fixa': 'Renda Fixa',
-    'criptomoedas': 'Criptomoedas',
-};
 
-const getLocalFriendlyLabel = (label: string): string => {
-    const lowerCaseLabel = label.toLowerCase();
-    if (Object.prototype.hasOwnProperty.call(LABEL_MAP, lowerCaseLabel)) {
-        return LABEL_MAP[lowerCaseLabel];
-    }
-    return label;
-};
 
 const AllocationChart: React.FC<AllocationChartProps> = ({ dataNode, colorKey, onSliceClick, isDarkMode }) => {
 
     const chartData = useMemo(() => {
         if (!dataNode || Object.keys(dataNode).length === 0) return [];
-
         const colors = COLORS[colorKey as keyof typeof COLORS] || COLORS.category;
-
         return Object.entries(dataNode).map(([key, node], index) => ({
-            id: getLocalFriendlyLabel(key),
-            label: getLocalFriendlyLabel(key),
+            id: getFriendlyLabel(key), // <-- 3. USAR A FUNÇÃO IMPORTADA
+            label: getFriendlyLabel(key), // <-- 3. USAR A FUNÇÃO IMPORTADA
             value: node.percentage,
             originalKey: key,
             color: colors[index % colors.length],

@@ -1,44 +1,29 @@
 // --- components/Dashboard/Dashboard.jsx ---
 import React, { useState, useEffect, useMemo } from 'react';
-// IMPORTAÇÕES REMOVIDAS de react-chartjs-2 e chart.js
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Legend as RechartsLegend } from 'recharts';
-import AllocationChart from './AllocationChart'; // IMPORTADO o novo componente para o gráfico de pizza
+import AllocationChart from './AllocationChart';
 import './dashboard.css';
+// 1. IMPORTAÇÃO CENTRALIZADA
+import { getFriendlyLabel } from '../../utils/labelUtils'; 
 
-// REGISTRO REMOVIDO do ChartJS.
-
-// --- Constantes e Funções Auxiliares ---
-// As constantes de cores foram movidas para AllocationChart.jsx para encapsulamento.
-const LABEL_MAP = {
-    brazil: 'Brasil',
-    usa: 'EUA',
-    crypto: 'Cripto',
-    'ações': 'Ações',
-    'etfs': 'ETFs',
-    'renda fixa': 'Renda Fixa',
-    'criptomoedas': 'Criptomoedas',
-};
+// --- FUNÇÕES AUXILIARES ---
 
 const formatChartDate = (dateString) => {
     if (!dateString || !dateString.includes('/')) return dateString;
-
     const [month, year] = dateString.split('/');
     const monthMap = {
         'Jan': 'Jan', 'Feb': 'Fev', 'Mar': 'Mar', 'Apr': 'Abr', 
         'May': 'Mai', 'Jun': 'Jun', 'Jul': 'Jul', 'Aug': 'Ago', 
         'Sep': 'Set', 'Oct': 'Out', 'Nov': 'Nov', 'Dec': 'Dez'
     };
-    
     const translatedMonth = monthMap[month] || month;
     return `${translatedMonth}/${year}`;
 };
 
-const getFriendlyLabel = (label) => LABEL_MAP[label.toLowerCase()] || label;
-
 const formatCurrency = (value = 0) =>
     Number(value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
-// Componente de Tooltip customizado para Recharts (permanece igual)
+// --- Componente de Tooltip customizado ---
 const CustomTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {
         const data = payload[0].payload;
@@ -60,7 +45,6 @@ const CustomTooltip = ({ active, payload }) => {
     return null;
 };
 
-
 // --- Componente Principal ---
 const Dashboard = ({ 
     percentagesData, 
@@ -70,7 +54,6 @@ const Dashboard = ({
     evolutionError 
 }) => {
     const [viewStack, setViewStack] = useState([{ path: [], title: 'Alocação por Categoria' }]);
-    // ESTADO REMOVIDO: O estado pieChartData não é mais necessário.
     const [isDarkMode, setIsDarkMode] = useState(false);
 
     useEffect(() => {
@@ -81,7 +64,6 @@ const Dashboard = ({
         return () => observer.disconnect();
     }, []);
 
-    // LÓGICA SIMPLIFICADA para obter os dados atuais para o gráfico de pizza.
     const { currentDataNode, colorKey } = useMemo(() => {
         if (!percentagesData) {
             return { currentDataNode: null, colorKey: 'category' };
@@ -93,15 +75,13 @@ const Dashboard = ({
         return { currentDataNode: dataNode, colorKey: cKey };
     }, [percentagesData, viewStack]);
 
-    // O useEffect que formatava os dados para o Chart.js foi REMOVIDO.
-
-    // FUNÇÃO ATUALIZADA para lidar com o clique vindo do componente Nivo.
     const handlePieClick = (originalLabel) => {
         const clickedNode = currentDataNode?.[originalLabel];
         
         if (clickedNode && clickedNode.children && Object.keys(clickedNode.children).length > 0) {
             const currentView = viewStack[viewStack.length - 1];
             const newPath = [...currentView.path, originalLabel];
+            // 2. USANDO A FUNÇÃO IMPORTADA
             const newTitle = `Alocação em ${getFriendlyLabel(originalLabel)}`;
             setViewStack([...viewStack, { path: newPath, title: newTitle }]);
         }
@@ -113,9 +93,6 @@ const Dashboard = ({
         }
     };
 
-    // Objeto de opções 'pieOptions' para o Chart.js foi REMOVIDO.
-
-    // Transformar dados para Recharts (permanece igual)
     const rechartsData = useMemo(() => {
         if (!evolutionData || evolutionData.length === 0) return [];
         
@@ -142,7 +119,6 @@ const Dashboard = ({
                     {isPercentagesLoading && <p className="loading-text">Carregando alocação...</p>}
 
                     {!isPercentagesLoading && currentDataNode && Object.keys(currentDataNode).length > 0 && (
-                        // GRÁFICO SUBSTITUÍDO pelo novo componente AllocationChart (Nivo)
                         <AllocationChart 
                             dataNode={currentDataNode}
                             colorKey={colorKey}
@@ -239,4 +215,4 @@ const Dashboard = ({
     );
 };
 
-export default Dashboard;
+export default Dashboard;   
