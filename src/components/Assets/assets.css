@@ -1,9 +1,6 @@
 /* src/components/Assets/assets.css (VERSÃO ATUALIZADA) */
 
 /* === 1. LAYOUT GERAL === */
-/* O .assets-container já usa a classe .card de app.css para fundo, borda e sombra. */
-/* Este arquivo só precisa estilizar os elementos INTERNOS. */
-
 .assets-container h2 {
     margin-top: 0;
     margin-bottom: 1.5rem;
@@ -22,7 +19,7 @@
 /* === 2. ABAS (TABS) === */
 .tabs-container {
     display: flex;
-    border-bottom: 2px solid; /* A cor será definida pelo tema */
+    border-bottom: 2px solid;
     margin-bottom: 1.5rem;
     transition: border-color 0.3s;
 }
@@ -43,7 +40,7 @@
 /* === 3. ACCORDION === */
 .asset-accordion {
     margin-bottom: 1rem;
-    border: 1px solid; /* A cor será definida pelo tema */
+    border: 1px solid;
     border-radius: 0.5rem;
     overflow: hidden;
     transition: border-color 0.3s;
@@ -66,7 +63,7 @@
 
 /* === 4. TABELA DE ATIVOS === */
 .accordion-content {
-    padding: 0; /* A tabela ocupará todo o espaço */
+    padding: 0;
 }
 
 .assets-table {
@@ -77,7 +74,7 @@
 .assets-table th, .assets-table td {
     padding: 0.875rem 1.25rem;
     text-align: left;
-    border-top: 1px solid; /* Borda entre as linhas */
+    border-top: 1px solid;
     transition: border-color 0.3s;
 }
 
@@ -95,12 +92,46 @@
     display: block;
 }
 .assets-table .align-right { text-align: right; }
-.profit-positive { color: #16a34a; } /* Verde para lucro */
-.profit-negative { color: #dc2626; } /* Vermelho para perda */
+.profit-positive { color: #16a34a; }
+.profit-negative { color: #dc2626; }
+
+/* === 5. AÇÕES (NOVO) === */
+.assets-table .actions-column {
+    width: 80px; /* Largura fixa para a coluna de ações */
+    text-align: right;
+}
+
+.action-buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+}
+
+.action-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.25rem;
+    font-size: 1rem;
+    opacity: 0.6;
+    transition: all 0.2s;
+}
+
+.action-button:hover {
+    opacity: 1;
+    transform: scale(1.2);
+}
+
+.edit-button:hover {
+    color: #60a5fa;
+}
+
+.delete-button:hover {
+    color: #f87171;
+}
 
 
-/* === 5. CORES DOS TEMAS === */
-
+/* === 6. CORES DOS TEMAS === */
 /* --- TEMA CLARO --- */
 .assets-container h2 { color: #111827; }
 .tabs-container { border-color: #e5e7eb; }
@@ -118,6 +149,7 @@
 .assets-table td { color: #1f2937; }
 .assets-table .asset-quantity { color: #6b7280; }
 .no-assets-message { color: #6b7280; }
+.action-button { color: #6b7280; }
 
 /* --- TEMA ESCURO --- */
 .dark .assets-container h2 { color: #f8fafc; }
@@ -136,5 +168,6 @@
 .dark .assets-table td { color: #e2e8f0; }
 .dark .assets-table .asset-quantity { color: #94a3b8; }
 .dark .no-assets-message { color: #94a3b8; }
-.dark .profit-positive { color: #4ade80; } /* Verde mais brilhante */
-.dark .profit-negative { color: #f87171; } /* Vermelho mais brilhante */
+.dark .profit-positive { color: #4ade80; }
+.dark .profit-negative { color: #f87171; }
+.dark .action-button { color: #94a3b8; }
