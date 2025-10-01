@@ -5,19 +5,8 @@ import './investedValueModal.css';
 const formatCurrency = (value = 0) =>
   Number(value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
-const InvestedValueModal = ({ isOpen, onClose, assetsData }) => {
+const InvestedValueModal = ({ isOpen, onClose, detailsData, isLoading }) => {
   if (!isOpen) return null;
-
-  // A estrutura de 'assetsData' é aninhada. Esta função a transforma 
-  // em uma lista simples de todos os ativos para facilitar a exibição.
-  const flatAssetList = useMemo(() => {
-    if (!assetsData) return [];
-    
-    return Object.values(assetsData)
-      .flat()
-      .flatMap(subCategory => subCategory.assets || [])
-      .sort((a, b) => b.totalInvested - a.totalInvested); // Ordena pelo maior valor investido
-  }, [assetsData]);
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -26,11 +15,15 @@ const InvestedValueModal = ({ isOpen, onClose, assetsData }) => {
         <h2>Valor Investido por Ativo</h2>
         
         <div className="invested-list">
-          {flatAssetList.length > 0 ? (
-            flatAssetList.map((asset, index) => (
-              <div key={`${asset.ticker || asset.name}-${index}`} className="invested-list-item">
-                <span className="invested-asset-name">{asset.ticker || asset.name}</span>
-                <span className="invested-asset-value">{formatCurrency(asset.totalInvested)}</span>
+          {/* 2. ADICIONADO ESTADO DE CARREGAMENTO */}
+          {isLoading ? (
+            <p style={{ textAlign: 'center' }}>Carregando detalhes...</p>
+          ) : detailsData.length > 0 ? (
+            // 3. MAPEIA DIRETAMENTE A LISTA RECEBIDA (detailsData)
+            detailsData.map((asset, index) => (
+              <div key={`${asset.name}-${index}`} className="invested-list-item">
+                <span className="invested-asset-name">{asset.name}</span>
+                <span className="invested-asset-value">{formatCurrency(asset.investedValue)}</span>
               </div>
             ))
           ) : (

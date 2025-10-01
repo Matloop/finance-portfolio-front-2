@@ -1,8 +1,7 @@
 // src/components/Informations/Informations.jsx
 
-import React, { useState } from 'react';
+import React from 'react';
 import './informations.css';
-import InvestedValueModal from '../InvestedValueModal/InvestedValueModal';
 
 const formatCurrency = (value = 0) =>
   Number(value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -10,9 +9,8 @@ const formatCurrency = (value = 0) =>
 const formatPercentage = (value = 0) =>
   `${Number(value).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%`;
 
-const Informations = ({ summaryData, assetsData, isLoading, error }) => {
-  const [isInvestedModalOpen, setInvestedModalOpen] = useState(false);
-
+// 1. AS PROPS MUDARAM: NÃO PRECISA MAIS DE assetsData, MAS AGORA TEM onOpenInvestedDetails
+const Informations = ({ summaryData, isLoading, error, onOpenInvestedDetails }) => {
   if (isLoading) {
     return (
       <div className="informations-container">
@@ -37,37 +35,31 @@ const Informations = ({ summaryData, assetsData, isLoading, error }) => {
   const profitabilityClass = profitability >= 0 ? 'profit' : 'loss';
 
   return (
-    <>
-      <div className="informations-container">
-        <div className="info-card card">
-          <h3>Patrimônio Total</h3>
-          <p>{formatCurrency(totalHeritage)}</p>
-        </div>
-
-        <div className="info-card card">
-          <button 
-            className="details-button" 
-            onClick={() => setInvestedModalOpen(true)}
-            aria-label="Ver detalhes do valor investido"
-          >
-            +
-          </button>
-          <h3>Valor Investido</h3>
-          <p>{formatCurrency(totalInvested)}</p>
-        </div>
-
-        <div className="info-card card">
-          <h3>Rentabilidade</h3>
-          <p className={profitabilityClass}>{formatPercentage(profitability)}</p>
-        </div>
+    // O <React.Fragment> ou <> não é mais necessário aqui
+    <div className="informations-container">
+      <div className="info-card card">
+        <h3>Patrimônio Total</h3>
+        <p>{formatCurrency(totalHeritage)}</p>
       </div>
 
-      <InvestedValueModal
-        isOpen={isInvestedModalOpen}
-        onClose={() => setInvestedModalOpen(false)}
-        assetsData={assetsData}
-      />
-    </>
+      <div className="info-card card">
+        {/* 2. O BOTÃO AGORA CHAMA A FUNÇÃO RECEBIDA VIA PROPS */}
+        <button 
+          className="details-button" 
+          onClick={onOpenInvestedDetails}
+          aria-label="Ver detalhes do valor investido"
+        >
+          +
+        </button>
+        <h3>Valor Investido</h3>
+        <p>{formatCurrency(totalInvested)}</p>
+      </div>
+
+      <div className="info-card card">
+        <h3>Rentabilidade</h3>
+        <p className={profitabilityClass}>{formatPercentage(profitability)}</p>
+      </div>
+    </div>
   );
 };
 

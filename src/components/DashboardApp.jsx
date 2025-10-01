@@ -6,30 +6,41 @@ import Dashboard from './Dashboard/Dashboard.jsx';
 import Informations from './Informations/Informations.jsx';
 import Assets from './Assets/Assets.jsx';
 import AddAssetModal from './AddAssetModal/AddAssetModal.jsx';
+import InvestedValueModal from './InvestedValueModal/InvestedValueModal.jsx';
 import { API_BASE_URL } from '../../apiConfig.js';
 import ThemeToggleButton from '../ThemeToggleButton.jsx';
 
 function DashboardApp() {
+    // Estados do App
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [dataRefreshTrigger, setDataRefreshTrigger] = useState(0);
     
+    // Estados de Dados
     const [dashboardData, setDashboardData] = useState(null);
     const [evolutionData, setEvolutionData] = useState(null);
     
+    // Estados de Carregamento e Erro
     const [isLoading, setIsLoading] = useState(true);
     const [isEvolutionLoading, setIsEvolutionLoading] = useState(true);
-    
     const [dashboardError, setDashboardError] = useState(null);
     const [evolutionError, setEvolutionError] = useState(null);
 
+    // Estados de Importação
     const [isImporting, setIsImporting] = useState(false);
     const [importResult, setImportResult] = useState(null);
     const fileInputRef = useRef(null);
 
+    // Refs de Animação
     const headerRef = useRef(null);
     const mainRef = useRef(null);
+    
+    // 2. ESTADOS PARA O NOVO MODAL (já estavam no seu código, o que é bom)
+    const [isInvestedModalOpen, setInvestedModalOpen] = useState(false);
+    const [investedDetails, setInvestedDetails] = useState([]);
+    const [isInvestedDetailsLoading, setIsInvestedDetailsLoading] = useState(false);
 
+    // Função para buscar dados principais
     const fetchData = useCallback(async () => {
         setIsLoading(true);
         setIsEvolutionLoading(true);
@@ -69,6 +80,24 @@ function DashboardApp() {
         fetchData();
     }, [fetchData, dataRefreshTrigger]);
 
+    // 3. FUNÇÃO PARA ABRIR O MODAL E BUSCAR OS DADOS (já estava no seu código)
+    const handleOpenInvestedDetails = async () => {
+        setIsInvestedDetailsLoading(true);
+        setInvestedModalOpen(true);
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/portfolio/invested-details`);
+            if (!response.ok) throw new Error('Falha ao buscar detalhes.');
+            const data = await response.json();
+            setInvestedDetails(data);
+        } catch (error) {
+            console.error("Erro ao buscar detalhes do valor investido:", error);
+            setInvestedDetails([]);
+        } finally {
+            setIsInvestedDetailsLoading(false);
+        }
+    };
+
+    // ... (Hooks de animação e outros handlers permanecem iguais)
     useEffect(() => {
         if (window.gsap && headerRef.current && mainRef.current) {
             window.gsap.from(headerRef.current, { y: -50, opacity: 0, duration: 0.6, ease: 'power3.out' });
@@ -162,12 +191,14 @@ function DashboardApp() {
                     </div>
                 )}
 
+                {/* 4. CORREÇÃO CRÍTICA: Passar a função `handleOpenInvestedDetails` como prop */}
                 <Informations 
-                    summaryData={dashboardData?.summary} 
-                    assetsData={dashboardData?.assets}
+                    summaryData={dashboardData?.summary}
                     isLoading={isLoading}
                     error={dashboardError}
+                    onOpenInvestedDetails={handleOpenInvestedDetails}
                 />
+                
                 <Dashboard 
                     percentagesData={dashboardData?.percentages} 
                     evolutionData={evolutionData}
@@ -181,10 +212,19 @@ function DashboardApp() {
                     error={dashboardError}
                 />
             </main>
+
             <AddAssetModal
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
                 onTransactionSuccess={handleTransactionSuccess}
+            />
+
+            {/* 5. CORREÇÃO CRÍTICA: Renderizar o novo modal e passar as props corretas */}
+            <InvestedValueModal
+                isOpen={isInvestedModalOpen}
+                onClose={() => setInvestedModalOpen(false)}
+                detailsData={investedDetails}
+                isLoading={isInvestedDetailsLoading}
             />
         </div>
     );
