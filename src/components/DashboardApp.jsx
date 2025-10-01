@@ -1,3 +1,5 @@
+// src/components/DashboardApp/DashboardApp.jsx
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import './app.css';
 import Dashboard from './Dashboard/Dashboard.jsx';
@@ -25,7 +27,6 @@ function DashboardApp() {
     const [importResult, setImportResult] = useState(null);
     const fileInputRef = useRef(null);
 
-    // Refs para animações GSAP
     const headerRef = useRef(null);
     const mainRef = useRef(null);
 
@@ -68,38 +69,16 @@ function DashboardApp() {
         fetchData();
     }, [fetchData, dataRefreshTrigger]);
 
-    // Animações de entrada usando GSAP
     useEffect(() => {
         if (window.gsap && headerRef.current && mainRef.current) {
-            window.gsap.from(headerRef.current, {
-                y: -50,
-                opacity: 0,
-                duration: 0.6,
-                ease: 'power3.out'
-            });
-
-            window.gsap.from(mainRef.current.children, {
-                y: 30,
-                opacity: 0,
-                duration: 0.6,
-                stagger: 0.15,
-                ease: 'power3.out',
-                delay: 0.2
-            });
+            window.gsap.from(headerRef.current, { y: -50, opacity: 0, duration: 0.6, ease: 'power3.out' });
+            window.gsap.from(mainRef.current.children, { y: 30, opacity: 0, duration: 0.6, stagger: 0.15, ease: 'power3.out', delay: 0.2 });
         }
     }, []);
 
-    // Animação ao atualizar dados
     useEffect(() => {
         if (!isLoading && !isEvolutionLoading && window.gsap && mainRef.current) {
-            window.gsap.from(mainRef.current.children, {
-                scale: 0.95,
-                opacity: 0,
-                duration: 0.4,
-                stagger: 0.1,
-                ease: 'back.out(1.2)',
-                clearProps: 'all'
-            });
+            window.gsap.from(mainRef.current.children, { scale: 0.95, opacity: 0, duration: 0.4, stagger: 0.1, ease: 'back.out(1.2)', clearProps: 'all' });
         }
     }, [isLoading, isEvolutionLoading, dataRefreshTrigger]);
 
@@ -109,17 +88,10 @@ function DashboardApp() {
 
     const handleRefreshAssets = async () => {
         setIsRefreshing(true);
-        
-        // Animação de rotação do botão
         const refreshBtn = document.querySelector('.refresh-button');
         if (window.gsap && refreshBtn) {
-            window.gsap.to(refreshBtn, {
-                rotation: 360,
-                duration: 1,
-                ease: 'power2.inOut'
-            });
+            window.gsap.to(refreshBtn, { rotation: 360, duration: 1, ease: 'power2.inOut' });
         }
-
         try {
             const response = await fetch(`${API_BASE_URL}/api/portfolio/refresh`, { method: 'POST' });
             if (!response.ok) throw new Error('Falha ao solicitar a atualização no backend.');
@@ -137,25 +109,17 @@ function DashboardApp() {
     const handleFileImport = async (event) => {
         const file = event.target.files[0];
         if (!file) return;
-
         setIsImporting(true);
         setImportResult(null);
         const formData = new FormData();
         formData.append('file', file);
-
         try {
-            const response = await fetch(`${API_BASE_URL}/api/csv/import/transactions`, {
-                method: 'POST',
-                body: formData,
-            });
-
+            const response = await fetch(`${API_BASE_URL}/api/csv/import/transactions`, { method: 'POST', body: formData });
             const result = await response.json();
             setImportResult(result);
-
             if (response.ok && result.successCount > 0) {
                 handleTransactionSuccess();
             }
-
         } catch (err) {
             setImportResult({ successCount: 0, errorCount: 1, errors: ['Erro de rede ao enviar o arquivo.'] });
         } finally {
@@ -170,38 +134,17 @@ function DashboardApp() {
                 <h1>Minha Carteira</h1>
                 <div className="header-actions">
                     <ThemeToggleButton />
-                    <button
-                        className="refresh-button transition-smooth"
-                        onClick={handleRefreshAssets}
-                        disabled={isRefreshing || isLoading || isEvolutionLoading || isImporting}
-                    >
+                    <button className="refresh-button transition-smooth" onClick={handleRefreshAssets} disabled={isRefreshing || isLoading || isEvolutionLoading || isImporting}>
                         {isRefreshing ? 'Atualizando...' : 'Atualizar Cotações'}
                     </button>
-                    <a
-                        href={`${API_BASE_URL}/api/csv/export/transactions`}
-                        className="export-button transition-smooth"
-                        download="carteira_transacoes.csv"
-                    >
+                    <a href={`${API_BASE_URL}/api/csv/export/transactions`} className="export-button transition-smooth" download="carteira_transacoes.csv">
                         Exportar CSV
                     </a>
-                    <input
-                        type="file"
-                        ref={fileInputRef}
-                        onChange={handleFileImport}
-                        accept=".csv"
-                        style={{ display: 'none' }}
-                    />
-                    <button
-                        className="import-button transition-smooth"
-                        onClick={handleImportClick}
-                        disabled={isImporting}
-                    >
+                    <input type="file" ref={fileInputRef} onChange={handleFileImport} accept=".csv" style={{ display: 'none' }} />
+                    <button className="import-button transition-smooth" onClick={handleImportClick} disabled={isImporting}>
                         {isImporting ? 'Importando...' : 'Importar CSV'}
                     </button>
-                    <button 
-                        className="add-button transition-smooth" 
-                        onClick={() => setIsModalOpen(true)}
-                    >
+                    <button className="add-button transition-smooth" onClick={() => setIsModalOpen(true)}>
                         Adicionar Ativo
                     </button>
                 </div>
@@ -221,6 +164,7 @@ function DashboardApp() {
 
                 <Informations 
                     summaryData={dashboardData?.summary} 
+                    assetsData={dashboardData?.assets}
                     isLoading={isLoading}
                     error={dashboardError}
                 />
