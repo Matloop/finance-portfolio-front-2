@@ -247,3 +247,19 @@ input:focus, select:focus { border-color: #3b82f6; box-shadow: 0 0 0 1px #3b82f6
   animation: spin 1s linear infinite;
 }
 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+.form-group label .currency-indicator {
+  margin-left: 0.5rem;
+  font-size: 0.75rem; /* 12px */
+  font-weight: 400; /* Mais fino que o label */
+  font-style: italic;
+}
+
+/* --- Cores Light Mode --- */
+.form-group label .currency-indicator {
+  color: #6b7280;
+}
+
+/* --- Cores Dark Mode --- */
+.dark .form-group label .currency-indicator {
+  color: #94a3b8;
+}

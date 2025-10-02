@@ -50,6 +50,9 @@ const AddAssetModal = ({ isOpen, onClose, onTransactionSuccess }) => {
     const [fiInitialValue, setFiInitialValue] = useState('');
     const [fiMaturityDate, setFiMaturityDate] = useState('');
     const [fiDailyLiquidity, setFiDailyLiquidity] = useState(false);
+    
+    // --- LÓGICA PARA DETERMINAR A MOEDA ---
+    const currencyIndicator = selectedCategory.includes('_US') ? '(USD)' : '(BRL)';
 
     // Efeito para buscar na API quando o termo de busca (com debounce) mudar
     useEffect(() => {
@@ -262,7 +265,10 @@ const AddAssetModal = ({ isOpen, onClose, onTransactionSuccess }) => {
                                 <input type="number" id="asset-quantity" step="any" value={quantity} onChange={(e) => setQuantity(e.target.value)} />
                             </div>
                             <div className="form-group">
-                                <label htmlFor="asset-price">Preço Unitário</label>
+                                <label htmlFor="asset-price">
+                                    Preço Unitário
+                                    <span className="currency-indicator">{currencyIndicator}</span>
+                                </label>
                                 <div className="price-input-wrapper">
                                     <input type="number" id="asset-price" step="any" value={pricePerUnit} onChange={(e) => setPricePerUnit(e.target.value)} disabled={isFetchingPrice} />
                                     {isFetchingPrice && <div className="spinner"></div>}
