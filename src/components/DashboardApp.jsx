@@ -8,7 +8,7 @@ import InvestedValueModal from './InvestedValueModal/InvestedValueModal.jsx';
 import { API_BASE_URL } from '../../apiConfig.js';
 import ThemeToggleButton from '../ThemeToggleButton.jsx';
 
-// --- Componentes Placeholder ---
+// --- Placeholder Modals ---
 // Estes componentes estão aqui para que o app funcione.
 // O ideal é movê-los para seus próprios arquivos em `src/components/`
 const EditAssetModal = ({ isOpen, onClose, asset }) => {
@@ -82,7 +82,7 @@ function DashboardApp() {
         try {
             const [dashboardResult, evolutionResult] = await Promise.allSettled([
                 fetch(`${API_BASE_URL}/api/portfolio/dashboard`),
-                fetch(`${API_BASE_URL}/api/portfolio/evolution`)
+                fetch(`${API_BASE_URL}/api/portfolio/evolution`) // Busca inicial sem filtros
             ]);
 
             if (dashboardResult.status === 'fulfilled' && dashboardResult.value.ok) {
@@ -111,8 +111,29 @@ function DashboardApp() {
         fetchData();
     }, [fetchData, dataRefreshTrigger]);
 
-    // --- Handlers de Ações ---
+    const fetchEvolutionDataWithFilters = useCallback(async (filters) => {
+        setIsEvolutionLoading(true);
+        setEvolutionError(null);
+        
+        const params = new URLSearchParams();
+        if (filters.assetType) params.append('assetType', filters.assetType);
+        if (filters.ticker) params.append('ticker', filters.ticker);
+        const queryString = params.toString();
 
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/portfolio/evolution?${queryString}`);
+            if (!response.ok) throw new Error('Falha ao carregar dados de evolução com filtros.');
+            
+            const data = await response.json();
+            setEvolutionData(data.evolution);
+        } catch (e) {
+            setEvolutionError(e.message || 'Erro ao buscar dados de evolução.');
+        } finally {
+            setIsEvolutionLoading(false);
+        }
+    }, []);
+
+    // --- Handlers de Ações ---
     const handleTransactionSuccess = () => setDataRefreshTrigger(prev => prev + 1);
 
     const handleOpenInvestedDetails = async () => {
@@ -143,26 +164,19 @@ function DashboardApp() {
 
     const confirmDelete = async () => {
         if (!selectedAsset) return;
-
         const identifier = selectedAsset.ticker || selectedAsset.name;
-        
         try {
             const response = await fetch(`${API_BASE_URL}/api/portfolio/assets/${identifier}?assetType=${selectedAsset.assetType}`, {
                 method: 'DELETE',
             });
-
             if (!response.ok) {
                 throw new Error('Falha ao excluir o ativo no servidor.');
             }
-            
-            // Dispara a atualização dos dados após a exclusão
             handleTransactionSuccess();
-
         } catch (error) {
             console.error("Erro ao deletar ativo:", error);
             alert('Não foi possível excluir o ativo. Tente novamente.');
         } finally {
-            // Fecha o modal e limpa o ativo selecionado em qualquer cenário
             setIsDeleteModalOpen(false);
             setSelectedAsset(null);
         }
@@ -271,6 +285,8 @@ function DashboardApp() {
                     isPercentagesLoading={isLoading}
                     isEvolutionLoading={isEvolutionLoading}
                     evolutionError={evolutionError}
+                    onFilterChange={fetchEvolutionDataWithFilters}
+                    assetsData={dashboardData?.assets}
                 />
                 <Assets 
                     assetsData={dashboardData?.assets} 
