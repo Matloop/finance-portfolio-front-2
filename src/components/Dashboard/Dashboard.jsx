@@ -46,6 +46,7 @@ const CustomTooltip = ({ active, payload }) => {
 
 // --- Componente Principal ---
 const Dashboard = ({ 
+    summaryData,
     percentagesData, 
     evolutionData, 
     isPercentagesLoading, 
@@ -67,21 +68,6 @@ const Dashboard = ({
         return () => observer.disconnect();
     }, []);
 
-    const annualVariation = useMemo(() => {
-        if (!evolutionData || evolutionData.length < 2) {
-            return 0;
-        }
-        const firstValue = evolutionData[0].patrimonio;
-        const lastValue = evolutionData[evolutionData.length - 1].patrimonio;
-
-        if (firstValue === 0) {
-            return lastValue > 0 ? 100.0 : 0; 
-        }
-
-        const variation = ((lastValue - firstValue) / firstValue) * 100;
-        return variation;
-    }, [evolutionData]);
-
     const { currentDataNode, colorKey } = useMemo(() => {
         if (!percentagesData) return { currentDataNode: null, colorKey: 'category' };
         const currentView = viewStack[viewStack.length - 1];
@@ -94,7 +80,9 @@ const Dashboard = ({
     const filterOptions = useMemo(() => {
         if (!assetsData) return { types: [], tickers: [] };
         
-        const allAssets = Object.values(assetsData).flat().flatMap(cat => cat.assets || []);
+        const allAssets = Object.values(assetsData)
+            .flat()
+            .flatMap(subCategory => subCategory.assets || []);
         
         const types = [...new Set(allAssets.map(a => a.assetType))].sort();
         const tickers = [...new Set(allAssets.map(a => a.ticker || a.name))].sort();
@@ -128,15 +116,63 @@ const Dashboard = ({
         }
     };
 
-    const rechartsData = useMemo(() => {
+    // Processa os dados de evolução removendo duplicatas
+    const processedEvolutionData = useMemo(() => {
         if (!evolutionData || evolutionData.length === 0) return [];
-        return evolutionData.map(d => ({
+        
+        // Remove pontos com datas duplicadas, mantendo sempre o último
+        const seen = new Set();
+        const filtered = [];
+        
+        for (let i = evolutionData.length - 1; i >= 0; i--) {
+            const date = evolutionData[i].date;
+            if (!seen.has(date)) {
+                seen.add(date);
+                filtered.unshift(evolutionData[i]);
+            }
+        }
+        
+        return filtered;
+    }, [evolutionData]);
+
+    // Calcula a variação anual baseada nos dados filtrados
+    const filteredYearlyProfitability = useMemo(() => {
+        console.log('🔍 DEBUG - processedEvolutionData:', processedEvolutionData);
+        
+        if (!processedEvolutionData || processedEvolutionData.length < 2) {
+            console.log('❌ Dados insuficientes:', processedEvolutionData?.length);
+            return null;
+        }
+        
+        // Encontra o primeiro ponto com patrimônio > 0
+        const firstValidIndex = processedEvolutionData.findIndex(d => d.patrimonio > 0);
+        if (firstValidIndex === -1) {
+            console.log('❌ Nenhum mês com patrimônio > 0');
+            return null;
+        }
+        
+        const oldestData = processedEvolutionData[firstValidIndex];
+        const newestData = processedEvolutionData[processedEvolutionData.length - 1];
+        
+        console.log('📊 Oldest:', oldestData);
+        console.log('📊 Newest:', newestData);
+        
+        const variation = ((newestData.patrimonio - oldestData.patrimonio) / oldestData.patrimonio) * 100;
+        console.log('✅ Variação calculada:', variation);
+        
+        return variation;
+    }, [processedEvolutionData]);
+
+    const rechartsData = useMemo(() => {
+        if (!processedEvolutionData || processedEvolutionData.length === 0) return [];
+        
+        return processedEvolutionData.map(d => ({
             date: formatChartDate(d.date),
             valorAplicado: d.valorAplicado,
             ganhoCapital: d.patrimonio - d.valorAplicado,
             patrimonio: d.patrimonio
         }));
-    }, [evolutionData]);
+    }, [processedEvolutionData]);
 
     return (
         <div className="dashboard-container">
@@ -167,9 +203,10 @@ const Dashboard = ({
                 <div className="chart-header">
                     <div className="chart-title-wrapper">
                         <h2>Evolução do Patrimônio</h2>
-                        {!isEvolutionLoading && evolutionData && evolutionData.length > 1 && (
-                            <span className={`annual-variation ${annualVariation >= 0 ? 'profit-positive' : 'profit-negative'}`}>
-                                {formatPercentageChange(annualVariation)}
+                        {!isEvolutionLoading && !evolutionError && filteredYearlyProfitability != null && (
+                            <span className={`annual-variation ${filteredYearlyProfitability >= 0 ? 'profit-positive' : 'profit-negative'}`}>
+                                {formatPercentageChange(filteredYearlyProfitability)}
+                                <span style={{fontSize: '0.7rem', marginLeft: '4px'}}> (12M)</span>
                             </span>
                         )}
                     </div>
