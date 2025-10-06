@@ -130,6 +130,16 @@
     color: #f87171;
 }
 
+.category-percentage {
+    font-size: 0.8rem;
+    font-weight: 600;
+    padding: 0.2rem 0.5rem;
+    border-radius: 0.5rem;
+    line-height: 1;
+}
+
+.total-value { font-size: 1rem; font-weight: 500; }
+.toggle-icon { font-size: 1.5rem; font-weight: 300; }
 
 /* === 6. CORES DOS TEMAS === */
 /* --- TEMA CLARO --- */

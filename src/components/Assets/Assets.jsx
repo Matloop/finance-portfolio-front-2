@@ -1,6 +1,4 @@
-// src/components/Assets/Assets.jsx
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import './assets.css';
 
 // --- FUNÇÕES AUXILIARES ---
@@ -20,13 +18,18 @@ const getFriendlyName = (key) => {
 };
 
 // --- COMPONENTES REUTILIZÁVEIS ---
-const Accordion = ({ title, totalValue, children, defaultOpen = true }) => {
+const Accordion = ({ title, totalValue, percentage, children, defaultOpen = true }) => {
     const [isOpen, setIsOpen] = useState(defaultOpen);
     return (
         <div className="asset-accordion">
             <div className="accordion-header" onClick={() => setIsOpen(!isOpen)}>
                 <div className="header-left">
                     <h3>{getFriendlyName(title)}</h3>
+                    {percentage > 0 && (
+                        <span className="category-percentage">
+                            {formatPercentage(percentage)}
+                        </span>
+                    )}
                     <span className="total-value">{formatCurrency(totalValue)}</span>
                 </div>
                 <span className="toggle-icon">{isOpen ? '−' : '+'}</span>
@@ -113,14 +116,16 @@ const Assets = ({ assetsData, isLoading, onEditAsset, onDeleteAsset }) => {
     const [activeTab, setActiveTab] = useState(null);
 
     useEffect(() => {
-        // Se temos dados e nenhuma aba foi selecionada ainda, seleciona a primeira.
         if (assetsData && Object.keys(assetsData).length > 0 && !activeTab) {
             setActiveTab(Object.keys(assetsData)[0]);
-        }
-        // Se os dados foram removidos (ex: refresh com erro), reseta a aba ativa.
-        else if (!assetsData && activeTab) {
+        } else if (!assetsData && activeTab) {
             setActiveTab(null);
         }
+    }, [assetsData, activeTab]);
+
+    const totalHeritageOfActiveTab = useMemo(() => {
+        if (!assetsData || !activeTab) return 0;
+        return (assetsData[activeTab] || []).reduce((sum, subCategory) => sum + subCategory.totalValue, 0);
     }, [assetsData, activeTab]);
 
     if (isLoading) {
@@ -132,9 +137,6 @@ const Assets = ({ assetsData, isLoading, onEditAsset, onDeleteAsset }) => {
         );
     }
 
-    // =====> CORREÇÃO APLICADA AQUI <=====
-    // Verificação simplificada e mais segura. Se não houver 'assetsData' ou se for um objeto vazio,
-    // renderiza a mensagem de "sem ativos".
     if (!assetsData || Object.keys(assetsData).length === 0) {
         return (
             <div className="assets-container card">
@@ -144,11 +146,7 @@ const Assets = ({ assetsData, isLoading, onEditAsset, onDeleteAsset }) => {
         );
     }
 
-    // A partir daqui, temos certeza que 'assetsData' é um objeto com chaves.
     const tabKeys = Object.keys(assetsData);
-    
-    // Se a aba ativa ainda não foi definida pelo useEffect (no primeiro ciclo),
-    // definimos 'activeTabData' como um array vazio para não quebrar o map.
     const activeTabData = activeTab ? assetsData[activeTab] || [] : [];
 
     return (
@@ -169,24 +167,31 @@ const Assets = ({ assetsData, isLoading, onEditAsset, onDeleteAsset }) => {
 
             <div className="tab-content">
                 {activeTabData.length > 0 ? (
-                    activeTabData.map((subCategory) => (
-                        <Accordion
-                            key={subCategory.categoryName}
-                            title={subCategory.categoryName}
-                            totalValue={subCategory.totalValue}
-                        >
-                            {subCategory.assets && subCategory.assets.length > 0 ? (
-                                <AssetsTable 
-                                    assets={subCategory.assets} 
-                                    isFixedIncome={subCategory.categoryName.toLowerCase() === 'renda fixa'}
-                                    onEditAsset={onEditAsset}
-                                    onDeleteAsset={onDeleteAsset}
-                                />
-                            ) : (
-                                <p className="no-assets-message">Nenhum ativo nesta categoria.</p>
-                            )}
-                        </Accordion>
-                    ))
+                    activeTabData.map((subCategory) => {
+                        const categoryPercentage = totalHeritageOfActiveTab > 0
+                            ? (subCategory.totalValue / totalHeritageOfActiveTab) * 100
+                            : 0;
+
+                        return (
+                            <Accordion
+                                key={subCategory.categoryName}
+                                title={subCategory.categoryName}
+                                totalValue={subCategory.totalValue}
+                                percentage={categoryPercentage}
+                            >
+                                {subCategory.assets && subCategory.assets.length > 0 ? (
+                                    <AssetsTable 
+                                        assets={subCategory.assets} 
+                                        isFixedIncome={subCategory.categoryName.toLowerCase() === 'renda fixa'}
+                                        onEditAsset={onEditAsset}
+                                        onDeleteAsset={onDeleteAsset}
+                                    />
+                                ) : (
+                                    <p className="no-assets-message">Nenhum ativo nesta categoria.</p>
+                                )}
+                            </Accordion>
+                        );
+                    })
                 ) : (
                     <p className="no-assets-message">Nenhum ativo para exibir nesta categoria.</p>
                 )}

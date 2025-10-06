@@ -20,6 +20,14 @@ const formatChartDate = (dateString) => {
 const formatCurrency = (value = 0) =>
     Number(value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
+const formatPercentageChange = (value = 0) => {
+    const formatted = Number(value).toLocaleString('pt-BR', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+    });
+    return `${value >= 0 ? '+' : ''}${formatted}%`;
+};
+
 // --- Componente de Tooltip customizado ---
 const CustomTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {
@@ -59,6 +67,21 @@ const Dashboard = ({
         return () => observer.disconnect();
     }, []);
 
+    const annualVariation = useMemo(() => {
+        if (!evolutionData || evolutionData.length < 2) {
+            return 0;
+        }
+        const firstValue = evolutionData[0].patrimonio;
+        const lastValue = evolutionData[evolutionData.length - 1].patrimonio;
+
+        if (firstValue === 0) {
+            return lastValue > 0 ? 100.0 : 0; 
+        }
+
+        const variation = ((lastValue - firstValue) / firstValue) * 100;
+        return variation;
+    }, [evolutionData]);
+
     const { currentDataNode, colorKey } = useMemo(() => {
         if (!percentagesData) return { currentDataNode: null, colorKey: 'category' };
         const currentView = viewStack[viewStack.length - 1];
@@ -80,7 +103,6 @@ const Dashboard = ({
     }, [assetsData]);
     
     useEffect(() => {
-        // Garante que onFilterChange existe e que o carregamento inicial terminou
         if (onFilterChange && !isPercentagesLoading) {
             const filters = {
                 assetType: selectedType !== 'all' ? selectedType : null,
@@ -143,8 +165,15 @@ const Dashboard = ({
             
             <div className="chart-card card">
                 <div className="chart-header">
-                    <h2>Evolução do Patrimônio</h2>
-                    <div className="evolution-filters" style={{ display: 'flex', gap: '0.5rem' }}>
+                    <div className="chart-title-wrapper">
+                        <h2>Evolução do Patrimônio</h2>
+                        {!isEvolutionLoading && evolutionData && evolutionData.length > 1 && (
+                            <span className={`annual-variation ${annualVariation >= 0 ? 'profit-positive' : 'profit-negative'}`}>
+                                {formatPercentageChange(annualVariation)}
+                            </span>
+                        )}
+                    </div>
+                    <div className="evolution-filters">
                         <select value={selectedType} onChange={e => { setSelectedTicker('all'); setSelectedType(e.target.value); }} disabled={isEvolutionLoading || !assetsData}>
                             <option value="all">Todos os Tipos</option>
                             {filterOptions.types.map(type => <option key={type} value={type}>{getFriendlyLabel(type)}</option>)}
