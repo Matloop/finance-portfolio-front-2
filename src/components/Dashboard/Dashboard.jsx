@@ -78,17 +78,37 @@ const Dashboard = ({
     }, [percentagesData, viewStack]);
 
     const filterOptions = useMemo(() => {
-        if (!assetsData) return { types: [], tickers: [] };
+        if (!assetsData) return { categories: [], assetTypes: [], tickers: [] };
         
-        const allAssets = Object.values(assetsData)
-            .flat()
-            .flatMap(subCategory => subCategory.assets || []);
-        
-        const types = [...new Set(allAssets.map(a => a.assetType))].sort();
-        const tickers = [...new Set(allAssets.map(a => a.ticker || a.name))].sort();
+        const categories = Object.keys(assetsData).sort();
+        let assetTypes = [];
+        let tickers = [];
 
-        return { types, tickers };
-    }, [assetsData]);
+        if (selectedCategory !== 'all' && assetsData[selectedCategory]) {
+            if (selectedCategory === 'cripto') {
+                // Para Cripto, as opções de Ticker são preenchidas
+                tickers = assetsData.cripto
+                    .flatMap(subCat => subCat.assets || [])
+                    .map(asset => asset.ticker)
+                    .sort();
+            } else {
+                // Para Brasil/EUA, as opções de Tipo de Ativo são preenchidas
+                assetTypes = assetsData[selectedCategory]
+                    .map(subCat => subCat.categoryName)
+                    .sort();
+
+                // Se um tipo de ativo foi selecionado, preenchemos os tickers
+                if (selectedAssetType !== 'all') {
+                    tickers = assetsData[selectedCategory]
+                        .find(subCat => subCat.categoryName === selectedAssetType)
+                        ?.assets.map(asset => asset.ticker || asset.name)
+                        .sort() || [];
+                }
+            }
+        }
+        
+        return { categories, assetTypes, tickers };
+    }, [assetsData, selectedCategory, selectedAssetType]);
     
     useEffect(() => {
         if (onFilterChange && !isPercentagesLoading) {
