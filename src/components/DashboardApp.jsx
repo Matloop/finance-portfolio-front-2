@@ -9,6 +9,8 @@ import { API_BASE_URL } from '../../apiConfig.js';
 import ThemeToggleButton from '../ThemeToggleButton.jsx';
 
 // --- Placeholder Modals ---
+// Estes componentes estão aqui para que o app funcione.
+// O ideal é movê-los para seus próprios arquivos em `src/components/`
 const EditAssetModal = ({ isOpen, onClose, asset }) => {
     if (!isOpen) return null;
     return (
@@ -18,6 +20,7 @@ const EditAssetModal = ({ isOpen, onClose, asset }) => {
                 <h2>Editar Ativo</h2>
                 <p>Aqui você poderá ver e editar as transações do ativo:</p>
                 <p><strong>{asset?.ticker || asset?.name}</strong></p>
+                {/* Futuramente, este modal conterá a lista de transações do ativo */}
             </div>
         </div>
     );
@@ -49,7 +52,6 @@ function DashboardApp() {
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [selectedAsset, setSelectedAsset] = useState(null);
-    
 
     // --- Estados de Dados e Carregamento ---
     const [dashboardData, setDashboardData] = useState(null);
@@ -114,8 +116,6 @@ function DashboardApp() {
         setEvolutionError(null);
         
         const params = new URLSearchParams();
-        // Nomes dos parâmetros ajustados para corresponder ao backend
-        if (filters.category) params.append('category', filters.category);
         if (filters.assetType) params.append('assetType', filters.assetType);
         if (filters.ticker) params.append('ticker', filters.ticker);
         const queryString = params.toString();
@@ -238,16 +238,38 @@ function DashboardApp() {
         }
     }, [isLoading, isEvolutionLoading, dataRefreshTrigger]);
 
-     return (
+    return (
         <div className="app-container">
             <header className="app-header" ref={headerRef}>
-                {/* ... (conteúdo do header) ... */}
+                <h1>Minha Carteira</h1>
+                <div className="header-actions">
+                    <ThemeToggleButton />
+                    <button className="refresh-button transition-smooth" onClick={handleRefreshAssets} disabled={isRefreshing || isLoading || isEvolutionLoading || isImporting}>
+                        {isRefreshing ? 'Atualizando...' : 'Atualizar Cotações'}
+                    </button>
+                    <a href={`${API_BASE_URL}/api/csv/export/transactions`} className="export-button transition-smooth" download="carteira_transacoes.csv">
+                        Exportar CSV
+                    </a>
+                    <input type="file" ref={fileInputRef} onChange={handleFileImport} accept=".csv" style={{ display: 'none' }} />
+                    <button className="import-button transition-smooth" onClick={handleImportClick} disabled={isImporting}>
+                        {isImporting ? 'Importando...' : 'Importar CSV'}
+                    </button>
+                    <button className="add-button transition-smooth" onClick={() => setIsAddAssetModalOpen(true)}>
+                        Adicionar Ativo
+                    </button>
+                </div>
             </header>
 
             <main ref={mainRef}>
                 {importResult && (
                     <div className={`import-summary animate-fade-in ${importResult.errorCount > 0 ? 'error' : 'success'}`}>
-                        {/* ... */}
+                        <p>Importação concluída: {importResult.successCount} sucesso(s), {importResult.errorCount} erro(s).</p>
+                        {importResult.errors?.length > 0 && (
+                            <ul>
+                                {importResult.errors.slice(0, 5).map((err, i) => <li key={i}>{err}</li>)}
+                                {importResult.errors.length > 5 && <li>E mais {importResult.errors.length - 5} erros...</li>}
+                            </ul>
+                        )}
                     </div>
                 )}
 
@@ -257,9 +279,7 @@ function DashboardApp() {
                     error={dashboardError}
                     onOpenInvestedDetails={handleOpenInvestedDetails}
                 />
-                
                 <Dashboard 
-                    summaryData={dashboardData?.summary}
                     percentagesData={dashboardData?.percentages} 
                     evolutionData={evolutionData}
                     isPercentagesLoading={isLoading}
@@ -268,7 +288,6 @@ function DashboardApp() {
                     onFilterChange={fetchEvolutionDataWithFilters}
                     assetsData={dashboardData?.assets}
                 />
-                
                 <Assets 
                     assetsData={dashboardData?.assets} 
                     isLoading={isLoading}
@@ -279,10 +298,28 @@ function DashboardApp() {
             </main>
 
             {/* --- Seção de Modais --- */}
-            <AddAssetModal isOpen={isAddAssetModalOpen} onClose={() => setIsAddAssetModalOpen(false)} onTransactionSuccess={handleTransactionSuccess} />
-            <InvestedValueModal isOpen={isInvestedModalOpen} onClose={() => setInvestedModalOpen(false)} detailsData={investedDetails} isLoading={isInvestedDetailsLoading} />
-            <EditAssetModal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} asset={selectedAsset} />
-            <DeleteConfirmationModal isOpen={isDeleteModalOpen} onClose={() => setIsDeleteModalOpen(false)} asset={selectedAsset} onConfirm={confirmDelete} />
+            <AddAssetModal
+                isOpen={isAddAssetModalOpen}
+                onClose={() => setIsAddAssetModalOpen(false)}
+                onTransactionSuccess={handleTransactionSuccess}
+            />
+            <InvestedValueModal
+                isOpen={isInvestedModalOpen}
+                onClose={() => setInvestedModalOpen(false)}
+                detailsData={investedDetails}
+                isLoading={isInvestedDetailsLoading}
+            />
+            <EditAssetModal
+                isOpen={isEditModalOpen}
+                onClose={() => setIsEditModalOpen(false)}
+                asset={selectedAsset}
+            />
+            <DeleteConfirmationModal
+                isOpen={isDeleteModalOpen}
+                onClose={() => setIsDeleteModalOpen(false)}
+                asset={selectedAsset}
+                onConfirm={confirmDelete}
+            />
         </div>
     );
 }
