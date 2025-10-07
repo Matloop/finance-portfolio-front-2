@@ -1,1 +1,1 @@
-export const API_BASE_URL = 'https://finance-portfolio-back.onrender.com' || 'http://localhost:8080';
+export const API_BASE_URL = 'https://finance-portfolio-back.onrender.com' ;
