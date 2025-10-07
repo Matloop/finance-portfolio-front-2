@@ -1,6 +1,6 @@
 // src/components/InvestedValueModal/InvestedValueModal.jsx
 import React, { useMemo } from 'react';
-import './investedValueModal.css';
+import './InvestedValueModal.css';
 
 const formatCurrency = (value = 0) =>
   Number(value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
