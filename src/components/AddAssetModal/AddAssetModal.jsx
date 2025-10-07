@@ -52,7 +52,9 @@ const AddAssetModal = ({ isOpen, onClose, onTransactionSuccess }) => {
     const [fiDailyLiquidity, setFiDailyLiquidity] = useState(false);
     
     // --- LÓGICA PARA DETERMINAR A MOEDA ---
-    const currencyIndicator = selectedCategory.includes('_US') ? '(USD)' : '(BRL)';
+    const currencyIndicator = useMemo(() => {
+        return selectedCategory.includes('_US') ? '(USD)' : '(BRL)';
+    }, [selectedCategory]);
 
     // Efeito para buscar na API quando o termo de busca (com debounce) mudar
     useEffect(() => {
