@@ -59,6 +59,8 @@ const Dashboard = ({
     const [isDarkMode, setIsDarkMode] = useState(false);
     const [selectedType, setSelectedType] = useState('all');
     const [selectedTicker, setSelectedTicker] = useState('all');
+    const [selectedCategory, setSelectedCategory] = useState('all'); // Adicionado para consistência
+    const [selectedAssetType, setSelectedAssetType] = useState('all'); // Adicionado para consistência
 
     useEffect(() => {
         const checkTheme = () => setIsDarkMode(document.documentElement.classList.contains('dark'));
@@ -86,18 +88,15 @@ const Dashboard = ({
 
         if (selectedCategory !== 'all' && assetsData[selectedCategory]) {
             if (selectedCategory === 'cripto') {
-                // Para Cripto, as opções de Ticker são preenchidas
                 tickers = assetsData.cripto
                     .flatMap(subCat => subCat.assets || [])
                     .map(asset => asset.ticker)
                     .sort();
             } else {
-                // Para Brasil/EUA, as opções de Tipo de Ativo são preenchidas
                 assetTypes = assetsData[selectedCategory]
                     .map(subCat => subCat.categoryName)
                     .sort();
 
-                // Se um tipo de ativo foi selecionado, preenchemos os tickers
                 if (selectedAssetType !== 'all') {
                     tickers = assetsData[selectedCategory]
                         .find(subCat => subCat.categoryName === selectedAssetType)
@@ -113,12 +112,14 @@ const Dashboard = ({
     useEffect(() => {
         if (onFilterChange && !isPercentagesLoading) {
             const filters = {
-                assetType: selectedType !== 'all' ? selectedType : null,
+                category: selectedCategory !== 'all' ? selectedCategory : null,
+                assetType: selectedAssetType !== 'all' ? selectedAssetType : null,
                 ticker: selectedTicker !== 'all' ? selectedTicker : null,
             };
             onFilterChange(filters);
         }
-    }, [selectedType, selectedTicker, onFilterChange, isPercentagesLoading]);
+    }, [selectedCategory, selectedAssetType, selectedTicker, onFilterChange, isPercentagesLoading]);
+
 
     const handlePieClick = (originalLabel) => {
         const clickedNode = currentDataNode?.[originalLabel];
@@ -136,63 +137,15 @@ const Dashboard = ({
         }
     };
 
-    // Processa os dados de evolução removendo duplicatas
-    const processedEvolutionData = useMemo(() => {
-        if (!evolutionData || evolutionData.length === 0) return [];
-        
-        // Remove pontos com datas duplicadas, mantendo sempre o último
-        const seen = new Set();
-        const filtered = [];
-        
-        for (let i = evolutionData.length - 1; i >= 0; i--) {
-            const date = evolutionData[i].date;
-            if (!seen.has(date)) {
-                seen.add(date);
-                filtered.unshift(evolutionData[i]);
-            }
-        }
-        
-        return filtered;
-    }, [evolutionData]);
-
-    // Calcula a variação anual baseada nos dados filtrados
-    const filteredYearlyProfitability = useMemo(() => {
-        console.log('🔍 DEBUG - processedEvolutionData:', processedEvolutionData);
-        
-        if (!processedEvolutionData || processedEvolutionData.length < 2) {
-            console.log('❌ Dados insuficientes:', processedEvolutionData?.length);
-            return null;
-        }
-        
-        // Encontra o primeiro ponto com patrimônio > 0
-        const firstValidIndex = processedEvolutionData.findIndex(d => d.patrimonio > 0);
-        if (firstValidIndex === -1) {
-            console.log('❌ Nenhum mês com patrimônio > 0');
-            return null;
-        }
-        
-        const oldestData = processedEvolutionData[firstValidIndex];
-        const newestData = processedEvolutionData[processedEvolutionData.length - 1];
-        
-        console.log('📊 Oldest:', oldestData);
-        console.log('📊 Newest:', newestData);
-        
-        const variation = ((newestData.patrimonio - oldestData.patrimonio) / oldestData.patrimonio) * 100;
-        console.log('✅ Variação calculada:', variation);
-        
-        return variation;
-    }, [processedEvolutionData]);
-
     const rechartsData = useMemo(() => {
-        if (!processedEvolutionData || processedEvolutionData.length === 0) return [];
-        
-        return processedEvolutionData.map(d => ({
+        if (!evolutionData || evolutionData.length === 0) return [];
+        return evolutionData.map(d => ({
             date: formatChartDate(d.date),
             valorAplicado: d.valorAplicado,
             ganhoCapital: d.patrimonio - d.valorAplicado,
             patrimonio: d.patrimonio
         }));
-    }, [processedEvolutionData]);
+    }, [evolutionData]);
 
     return (
         <div className="dashboard-container">
@@ -223,22 +176,62 @@ const Dashboard = ({
                 <div className="chart-header">
                     <div className="chart-title-wrapper">
                         <h2>Evolução do Patrimônio</h2>
-                        {!isEvolutionLoading && !evolutionError && filteredYearlyProfitability != null && (
-                            <span className={`annual-variation ${filteredYearlyProfitability >= 0 ? 'profit-positive' : 'profit-negative'}`}>
-                                {formatPercentageChange(filteredYearlyProfitability)}
+                        {!isPercentagesLoading && summaryData?.yearlyProfitability != null && (
+                            <span className={`annual-variation ${summaryData.yearlyProfitability >= 0 ? 'profit-positive' : 'profit-negative'}`}>
+                                {formatPercentageChange(summaryData.yearlyProfitability)}
                                 <span style={{fontSize: '0.7rem', marginLeft: '4px'}}> (12M)</span>
                             </span>
                         )}
                     </div>
-                    <div className="evolution-filters">
-                        <select value={selectedType} onChange={e => { setSelectedTicker('all'); setSelectedType(e.target.value); }} disabled={isEvolutionLoading || !assetsData}>
-                            <option value="all">Todos os Tipos</option>
-                            {filterOptions.types.map(type => <option key={type} value={type}>{getFriendlyLabel(type)}</option>)}
+                     <div className="evolution-filters">
+                        <select 
+                            value={selectedCategory} 
+                            onChange={e => {
+                                setSelectedCategory(e.target.value);
+                                setSelectedAssetType('all');
+                                setSelectedTicker('all');
+                            }} 
+                            disabled={isEvolutionLoading || !assetsData}
+                        >
+                            <option value="all">Todas as Categorias</option>
+                            {filterOptions.categories.map(cat => (
+                                <option key={cat} value={cat}>{getFriendlyLabel(cat)}</option>
+                            ))}
                         </select>
-                        <select value={selectedTicker} onChange={e => setSelectedTicker(e.target.value)} disabled={isEvolutionLoading || !assetsData}>
-                            <option value="all">Todos os Ativos</option>
-                            {filterOptions.tickers.map(ticker => <option key={ticker} value={ticker}>{ticker}</option>)}
-                        </select>
+
+                        {selectedCategory === 'cripto' ? (
+                            <select 
+                                value={selectedTicker} 
+                                onChange={e => setSelectedTicker(e.target.value)} 
+                                disabled={isEvolutionLoading || selectedCategory === 'all'}
+                            >
+                                <option value="all">Todas as Criptos</option>
+                                {filterOptions.tickers.map(ticker => <option key={ticker} value={ticker}>{ticker}</option>)}
+                            </select>
+                        ) : (
+                            <select 
+                                value={selectedAssetType} 
+                                onChange={e => {
+                                    setSelectedAssetType(e.target.value);
+                                    setSelectedTicker('all');
+                                }} 
+                                disabled={isEvolutionLoading || selectedCategory === 'all'}
+                            >
+                                <option value="all">Todos os Tipos</option>
+                                {filterOptions.assetTypes.map(type => <option key={type} value={type}>{getFriendlyLabel(type)}</option>)}
+                            </select>
+                        )}
+                        
+                        {selectedCategory !== 'all' && selectedCategory !== 'cripto' && selectedAssetType !== 'all' && (
+                            <select 
+                                value={selectedTicker} 
+                                onChange={e => setSelectedTicker(e.target.value)} 
+                                disabled={isEvolutionLoading}
+                            >
+                                <option value="all">Todos os Ativos</option>
+                                {filterOptions.tickers.map(ticker => <option key={ticker} value={ticker}>{ticker}</option>)}
+                            </select>
+                        )}
                     </div>
                 </div>
                 <div className="chart-wrapper">
