@@ -49,6 +49,7 @@ function DashboardApp() {
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [selectedAsset, setSelectedAsset] = useState(null);
+    
 
     // --- Estados de Dados e Carregamento ---
     const [dashboardData, setDashboardData] = useState(null);

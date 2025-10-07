@@ -57,10 +57,11 @@ const Dashboard = ({
 }) => {
     const [viewStack, setViewStack] = useState([{ path: [], title: 'Alocação por Categoria' }]);
     const [isDarkMode, setIsDarkMode] = useState(false);
-    const [selectedType, setSelectedType] = useState('all');
+    
+    // =======================> CORREÇÃO NOS ESTADOS <=======================
+    const [selectedCategory, setSelectedCategory] = useState('all');
+    const [selectedAssetType, setSelectedAssetType] = useState('all');
     const [selectedTicker, setSelectedTicker] = useState('all');
-    const [selectedCategory, setSelectedCategory] = useState('all'); // Adicionado para consistência
-    const [selectedAssetType, setSelectedAssetType] = useState('all'); // Adicionado para consistência
 
     useEffect(() => {
         const checkTheme = () => setIsDarkMode(document.documentElement.classList.contains('dark'));
@@ -119,7 +120,6 @@ const Dashboard = ({
             onFilterChange(filters);
         }
     }, [selectedCategory, selectedAssetType, selectedTicker, onFilterChange, isPercentagesLoading]);
-
 
     const handlePieClick = (originalLabel) => {
         const clickedNode = currentDataNode?.[originalLabel];
@@ -183,7 +183,7 @@ const Dashboard = ({
                             </span>
                         )}
                     </div>
-                     <div className="evolution-filters">
+                    <div className="evolution-filters">
                         <select 
                             value={selectedCategory} 
                             onChange={e => {
