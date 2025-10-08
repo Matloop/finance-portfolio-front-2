@@ -344,3 +344,8 @@ html {
     scroll-behavior: auto !important;
   }
 }
+
+/* --- CORREÇÃO PARA O SCROLL DO MODAL --- */
+body.modal-open {
+  overflow: hidden;
+}

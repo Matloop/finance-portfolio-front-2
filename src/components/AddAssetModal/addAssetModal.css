@@ -1,5 +1,3 @@
-/* src/components/AddAssetModal/addAssetModal.css */
-
 /* === 1. OVERLAY & LAYOUT === */
 .modal-overlay {
   position: fixed;
@@ -13,6 +11,8 @@
   align-items: center;
   z-index: 1000;
   backdrop-filter: blur(4px);
+  /* Adicionado padding para o caso de o modal ser muito alto */
+  padding: 2rem 0; 
 }
 
 .modal-content {
@@ -22,6 +22,9 @@
   max-width: 500px;
   position: relative;
   transition: background-color 0.3s, color 0.3s;
+  /* --- CORREÇÃO DE SCROLL INTERNO --- */
+  max-height: 90vh; /* Altura máxima para não passar da tela */
+  overflow-y: auto; /* Adiciona scroll apenas quando necessário */
 }
 
 .close-button {

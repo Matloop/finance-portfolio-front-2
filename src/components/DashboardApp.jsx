@@ -49,7 +49,6 @@ function DashboardApp() {
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [selectedAsset, setSelectedAsset] = useState(null);
-    
 
     // --- Estados de Dados e Carregamento ---
     const [dashboardData, setDashboardData] = useState(null);
@@ -72,6 +71,21 @@ function DashboardApp() {
     const headerRef = useRef(null);
     const mainRef = useRef(null);
 
+    // --- LÓGICA DE CONTROLE DE SCROLL DO BODY ---
+    useEffect(() => {
+        const isAnyModalOpen = isAddAssetModalOpen || isInvestedModalOpen || isEditModalOpen || isDeleteModalOpen;
+        if (isAnyModalOpen) {
+            document.body.classList.add('modal-open');
+        } else {
+            document.body.classList.remove('modal-open');
+        }
+        // Cleanup function para garantir que a classe seja removida se o componente for desmontado
+        return () => {
+            document.body.classList.remove('modal-open');
+        };
+    }, [isAddAssetModalOpen, isInvestedModalOpen, isEditModalOpen, isDeleteModalOpen]);
+
+
     const fetchData = useCallback(async () => {
         setIsLoading(true);
         setIsEvolutionLoading(true);
@@ -80,7 +94,7 @@ function DashboardApp() {
         try {
             const [dashboardResult, evolutionResult] = await Promise.allSettled([
                 fetch(`${API_BASE_URL}/api/portfolio/dashboard`),
-                fetch(`${API_BASE_URL}/api/portfolio/evolution`) // Busca inicial sem filtros
+                fetch(`${API_BASE_URL}/api/portfolio/evolution`)
             ]);
 
             if (dashboardResult.status === 'fulfilled' && dashboardResult.value.ok) {
@@ -114,7 +128,6 @@ function DashboardApp() {
         setEvolutionError(null);
         
         const params = new URLSearchParams();
-        // Nomes dos parâmetros ajustados para corresponder ao backend
         if (filters.category) params.append('category', filters.category);
         if (filters.assetType) params.append('assetType', filters.assetType);
         if (filters.ticker) params.append('ticker', filters.ticker);
@@ -132,10 +145,10 @@ function DashboardApp() {
             setIsEvolutionLoading(false);
         }
     }, []);
-
+    
     // --- Handlers de Ações ---
     const handleTransactionSuccess = () => setDataRefreshTrigger(prev => prev + 1);
-
+    
     const handleOpenInvestedDetails = async () => {
         setIsInvestedDetailsLoading(true);
         setInvestedModalOpen(true);
@@ -226,28 +239,72 @@ function DashboardApp() {
 
     // --- Hooks de Animação ---
     useEffect(() => {
-        if (window.gsap && headerRef.current && mainRef.current) {
+        if (window.gsap && headerRef.current) {
             window.gsap.from(headerRef.current, { y: -50, opacity: 0, duration: 0.6, ease: 'power3.out' });
-            window.gsap.from(mainRef.current.children, { y: 30, opacity: 0, duration: 0.6, stagger: 0.15, ease: 'power3.out', delay: 0.2 });
         }
     }, []);
 
     useEffect(() => {
         if (!isLoading && !isEvolutionLoading && window.gsap && mainRef.current) {
-            window.gsap.from(mainRef.current.children, { scale: 0.95, opacity: 0, duration: 0.4, stagger: 0.1, ease: 'back.out(1.2)', clearProps: 'all' });
+            if (!mainRef.current.classList.contains('has-animated')) {
+                mainRef.current.classList.add('has-animated');
+                window.gsap.from(mainRef.current.children, {
+                    y: 30,
+                    opacity: 0,
+                    duration: 0.6,
+                    stagger: 0.15,
+                    ease: 'power3.out',
+                    delay: 0.2
+                });
+            }
         }
-    }, [isLoading, isEvolutionLoading, dataRefreshTrigger]);
+    }, [isLoading, isEvolutionLoading]);
+
+    useEffect(() => {
+        if (dataRefreshTrigger > 0 && !isLoading && !isEvolutionLoading && window.gsap && mainRef.current) {
+            window.gsap.from(mainRef.current.children, {
+                scale: 0.95,
+                opacity: 0,
+                duration: 0.4,
+                stagger: 0.1,
+                ease: 'back.out(1.2)',
+                clearProps: 'all'
+            });
+        }
+    }, [dataRefreshTrigger]);
 
      return (
         <div className="app-container">
             <header className="app-header" ref={headerRef}>
-                {/* ... (conteúdo do header) ... */}
+                <h1>Minha Carteira</h1>
+                <div className="header-actions">
+                    <ThemeToggleButton />
+                    <button className="refresh-button transition-smooth" onClick={handleRefreshAssets} disabled={isRefreshing || isLoading || isEvolutionLoading || isImporting}>
+                        {isRefreshing ? 'Atualizando...' : 'Atualizar Cotações'}
+                    </button>
+                    <a href={`${API_BASE_URL}/api/csv/export/transactions`} className="export-button transition-smooth" download="carteira_transacoes.csv">
+                        Exportar CSV
+                    </a>
+                    <input type="file" ref={fileInputRef} onChange={handleFileImport} accept=".csv" style={{ display: 'none' }} />
+                    <button className="import-button transition-smooth" onClick={handleImportClick} disabled={isImporting}>
+                        {isImporting ? 'Importando...' : 'Importar CSV'}
+                    </button>
+                    <button className="add-button transition-smooth" onClick={() => setIsAddAssetModalOpen(true)}>
+                        Adicionar Ativo
+                    </button>
+                </div>
             </header>
 
             <main ref={mainRef}>
                 {importResult && (
                     <div className={`import-summary animate-fade-in ${importResult.errorCount > 0 ? 'error' : 'success'}`}>
-                        {/* ... */}
+                        <p>Importação concluída: {importResult.successCount} sucesso(s), {importResult.errorCount} erro(s).</p>
+                        {importResult.errors?.length > 0 && (
+                            <ul>
+                                {importResult.errors.slice(0, 5).map((err, i) => <li key={i}>{err}</li>)}
+                                {importResult.errors.length > 5 && <li>E mais {importResult.errors.length - 5} erros...</li>}
+                            </ul>
+                        )}
                     </div>
                 )}
 
