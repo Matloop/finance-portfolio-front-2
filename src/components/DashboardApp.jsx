@@ -86,42 +86,9 @@ function DashboardApp() {
     }, [isAddAssetModalOpen, isInvestedModalOpen, isEditModalOpen, isDeleteModalOpen]);
 
 
-    const fetchData = useCallback(async () => {
-        setIsLoading(true);
-        setIsEvolutionLoading(true);
-        setDashboardError(null);
-        setEvolutionError(null);
-        try {
-            const [dashboardResult, evolutionResult] = await Promise.allSettled([
-                fetch(`${API_BASE_URL}/api/portfolio/dashboard`),
-                fetch(`${API_BASE_URL}/api/portfolio/evolution`)
-            ]);
-
-            if (dashboardResult.status === 'fulfilled' && dashboardResult.value.ok) {
-                setDashboardData(await dashboardResult.value.json());
-            } else {
-                setDashboardError(dashboardResult.reason?.message || 'Falha ao carregar dados do dashboard.');
-            }
-            if (evolutionResult.status === 'fulfilled' && evolutionResult.value.ok) {
-                const data = await evolutionResult.value.json();
-                setEvolutionData(data.evolution);
-            } else {
-                setEvolutionError(evolutionResult.reason?.message || 'Falha ao carregar dados de evolução.');
-            }
-        } catch (e) {
-            const generalError = "Ocorreu um erro inesperado. Verifique sua conexão.";
-            setDashboardError(generalError);
-            setEvolutionError(generalError);
-        } finally {
-            setIsLoading(false);
-            setIsEvolutionLoading(false);
-            setIsRefreshing(false);
-        }
-    }, []);
-
-    useEffect(() => {
-        fetchData();
-    }, [fetchData, dataRefreshTrigger]);
+    // =========================================================
+    // MODIFICAÇÃO CHAVE: Separação do fetch de dados
+    // =========================================================
 
     const fetchEvolutionDataWithFilters = useCallback(async (filters) => {
         setIsEvolutionLoading(true);
@@ -145,6 +112,54 @@ function DashboardApp() {
             setIsEvolutionLoading(false);
         }
     }, []);
+
+    const fetchEvolutionData = useCallback(async () => {
+        // Recarrega a evolução sem filtros para o estado padrão
+        const initialFilters = { category: null, assetType: null, ticker: null };
+        await fetchEvolutionDataWithFilters(initialFilters);
+    }, [fetchEvolutionDataWithFilters]);
+
+
+    const fetchDashboardData = useCallback(async () => {
+        setIsLoading(true);
+        setDashboardError(null);
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/portfolio/dashboard`);
+            if (response.ok) {
+                setDashboardData(await response.json());
+            } else {
+                setDashboardError('Falha ao carregar dados do dashboard.');
+            }
+        } catch (e) {
+            setDashboardError("Ocorreu um erro inesperado. Verifique sua conexão.");
+        } finally {
+            setIsLoading(false);
+            setIsRefreshing(false);
+        }
+    }, []);
+
+    // ---------------------------------------------------------
+    // NOVO useEffect para carregar dados na montagem
+    // ---------------------------------------------------------
+    useEffect(() => {
+        // Carrega o Dashboard e os Ativos
+        fetchDashboardData();
+        // Carrega a Evolução APENAS UMA VEZ para evitar lentidão
+        fetchEvolutionData();
+    }, [fetchDashboardData, fetchEvolutionData]);
+
+
+    // ---------------------------------------------------------
+    // NOVO useEffect que reage ao dataRefreshTrigger
+    // ---------------------------------------------------------
+    useEffect(() => {
+        if (dataRefreshTrigger > 0) {
+            // Recarrega APENAS o Dashboard (mais leve)
+            fetchDashboardData();
+            // A evolução não é recarregada para evitar as chamadas históricas
+        }
+    }, [dataRefreshTrigger, fetchDashboardData]);
+
     
     // --- Handlers de Ações ---
     const handleTransactionSuccess = () => setDataRefreshTrigger(prev => prev + 1);
@@ -204,7 +219,10 @@ function DashboardApp() {
         try {
             const response = await fetch(`${API_BASE_URL}/api/portfolio/refresh`, { method: 'POST' });
             if (!response.ok) throw new Error('Falha ao solicitar a atualização no backend.');
-            setTimeout(() => setDataRefreshTrigger(prev => prev + 1), 2000);
+            
+            // Dá tempo para o backend iniciar a atualização (lenta) e então recarrega os dados do dashboard
+            setTimeout(() => setDataRefreshTrigger(prev => prev + 1), 2000); 
+
         } catch (err) {
             alert('Não foi possível atualizar as cotações. Tente novamente.');
             setIsRefreshing(false);
@@ -245,6 +263,7 @@ function DashboardApp() {
     }, []);
 
     useEffect(() => {
+        // Animação de entrada dos componentes principais
         if (!isLoading && !isEvolutionLoading && window.gsap && mainRef.current) {
             if (!mainRef.current.classList.contains('has-animated')) {
                 mainRef.current.classList.add('has-animated');
@@ -261,6 +280,7 @@ function DashboardApp() {
     }, [isLoading, isEvolutionLoading]);
 
     useEffect(() => {
+        // Animação de refresh
         if (dataRefreshTrigger > 0 && !isLoading && !isEvolutionLoading && window.gsap && mainRef.current) {
             window.gsap.from(mainRef.current.children, {
                 scale: 0.95,
@@ -272,6 +292,7 @@ function DashboardApp() {
             });
         }
     }, [dataRefreshTrigger]);
+
 
      return (
         <div className="app-container">
