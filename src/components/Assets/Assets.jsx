@@ -61,7 +61,6 @@ const AssetsTable = ({ assets, isFixedIncome = false, onEditAsset, onDeleteAsset
                             <td className="align-right">{formatCurrency(asset.currentValue)}</td>
                             <td className="actions-column">
                                 <div className="action-buttons">
-                                    <button className="action-button edit-button" onClick={() => onEditAsset(asset)} title="Editar">✏️</button>
                                     <button className="action-button delete-button" onClick={() => onDeleteAsset(asset)} title="Deletar">🗑️</button>
                                 </div>
                             </td>
@@ -99,7 +98,6 @@ const AssetsTable = ({ assets, isFixedIncome = false, onEditAsset, onDeleteAsset
                         <td className="align-right">{formatCurrency(asset.currentValue)}</td>
                         <td className="actions-column">
                             <div className="action-buttons">
-                                <button className="action-button edit-button" onClick={() => onEditAsset(asset)} title="Editar">✏️</button>
                                 <button className="action-button delete-button" onClick={() => onDeleteAsset(asset)} title="Deletar">🗑️</button>
                             </div>
                         </td>
