@@ -25,7 +25,7 @@ const EditAssetModal = ({ isOpen, onClose, asset }) => {
         </div>
     );
 };
-
+console.log("VITE_API_URL from import.meta.env:", import.meta.env.VITE_API_URL);
 const DeleteConfirmationModal = ({ isOpen, onClose, asset, onConfirm }) => {
     if (!isOpen) return null;
     return (
