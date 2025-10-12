@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "http://financeportfolio6-env.eba-6iawnbyh.us-east-1.elasticbeanstalk.com/api/$1"
+    }
+  ]
+}
