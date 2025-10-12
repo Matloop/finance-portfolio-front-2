@@ -2,15 +2,15 @@
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "http://financeportfolio6-env.eba-6iawnbyh.us-east-1.elasticbeanstalk.com/api/$1"
+      "destination": "https://d123abc456def.cloudfront.net/api/$1"
     },
     {
       "source": "/oauth2/(.*)",
-      "destination": "http://financeportfolio6-env.eba-6iawnbyh.us-east-1.elasticbeanstalk.com/oauth2/$1"
+      "destination": "https://d123abc456def.cloudfront.net/oauth2/$1"
     },
     {
       "source": "/login/oauth2/(.*)",
-      "destination": "http://financeportfolio6-env.eba-6iawnbyh.us-east-1.elasticbeanstalk.com/login/oauth2/$1"
+      "destination": "https://d123abc456def.cloudfront.net/login/oauth2/$1"
     }
   ]
 }
