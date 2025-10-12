@@ -3,6 +3,10 @@
     {
       "source": "/api/(.*)",
       "destination": "http://financeportfolio6-env.eba-6iawnbyh.us-east-1.elasticbeanstalk.com/api/$1"
+    },
+    {
+      "source": "/oauth2/(.*)",
+      "destination": "http://financeportfolio6-env.eba-6iawnbyh.us-east-1.elasticbeanstalk.com/oauth2/$1"
     }
   ]
 }
