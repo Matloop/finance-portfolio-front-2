@@ -222,7 +222,7 @@ function DashboardApp() {
                     {isRefreshing ? 'Atualizando...' : 'Atualizar Cotações'}
                 </button>
                 <a 
-                    href="http://financeportfolio6-env.eba-6iawnbyh.us-east-1.elasticbeanstalk.com"
+                    href=""
                     className="export-button transition-smooth" 
                     download="carteira_transacoes.csv"
                 >
