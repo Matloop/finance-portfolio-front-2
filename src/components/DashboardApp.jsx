@@ -222,7 +222,7 @@ function DashboardApp() {
                     {isRefreshing ? 'Atualizando...' : 'Atualizar Cotações'}
                 </button>
                 <a 
-                    href={`${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/api/csv/export/transactions`} 
+                    href="http://financeportfolio6-env.eba-6iawnbyh.us-east-1.elasticbeanstalk.com"
                     className="export-button transition-smooth" 
                     download="carteira_transacoes.csv"
                 >

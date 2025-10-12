@@ -4,7 +4,7 @@ import dashboardImage from '../../assets/dashboard-placeholder.png';
 import ThemeToggleButton from '../../ThemeToggleButton';
 
 // Adicione a URL base do seu backend. Em um projeto real, isso viria de um arquivo de configuração (.env).
-const API_BASE_URL = 'http://localhost:8080'; // Ou a URL do seu backend na Vercel/AWS
+const API_BASE_URL = 'http://financeportfolio6-env.eba-6iawnbyh.us-east-1.elasticbeanstalk.com'; // Ou a URL do seu backend na Vercel/AWS
 
 const Header = () => {
     const headerRef = useRef(null);
