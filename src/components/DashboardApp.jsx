@@ -6,12 +6,10 @@ import Assets from './Assets/Assets.jsx';
 import AddAssetModal from './AddAssetModal/AddAssetModal.jsx';
 import InvestedValueModal from './InvestedValueModal/InvestedValueModal.jsx';
 import ThemeToggleButton from '../ThemeToggleButton.jsx';
-
-// Imports de autenticação
 import { useAuth } from '../context/AuthContext.jsx';
 import { fetchWithAuth } from '../../apiConfig.js';
 
-// --- Modals (sem alterações) ---
+
 const EditAssetModal = ({ isOpen, onClose, asset }) => {
     if (!isOpen) return null;
     return (
@@ -46,10 +44,7 @@ const DeleteConfirmationModal = ({ isOpen, onClose, asset, onConfirm }) => {
 
 
 function DashboardApp() {
-    // --- Lógica de Autenticação ---
     const { isAuthenticated, isLoading: isAuthLoading, login, logout } = useAuth();
-
-    // --- Sua Lógica de Estado (sem alterações) ---
     const [isAddAssetModalOpen, setIsAddAssetModalOpen] = useState(false);
     const [isInvestedModalOpen, setInvestedModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -71,45 +66,60 @@ function DashboardApp() {
     const headerRef = useRef(null);
     const mainRef = useRef(null);
 
-    // --- Captura o token da URL ---
+    
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
         const tokenFromUrl = params.get('token');
+
+        const fetchData = async () => {
+            if (!localStorage.getItem('jwt_token')) {
+                console.log("Fetch data abortado: nenhum token encontrado.");
+                return; // Segurança extra para não fazer fetch sem token
+            }
+            setIsLoading(true);
+            setIsEvolutionLoading(true);
+            setDashboardError(null);
+            setEvolutionError(null);
+            try {
+                console.log("Iniciando busca de dados com token...");
+                const [dashboardResult, evolutionResult] = await Promise.allSettled([
+                    fetchWithAuth('/api/portfolio/dashboard'),
+                    fetchWithAuth('/api/portfolio/evolution')
+                ]);
+
+                if (dashboardResult.status === 'fulfilled' && dashboardResult.value.ok) {
+                    setDashboardData(await dashboardResult.value.json());
+                } else {
+                    setDashboardError('Falha ao carregar dados do dashboard.');
+                    console.error("Erro no dashboard:", dashboardResult);
+                }
+
+                if (evolutionResult.status === 'fulfilled' && evolutionResult.value.ok) {
+                    const evoData = await evolutionResult.value.json();
+                    setEvolutionData(evoData.evolution);
+                } else {
+                    setEvolutionError('Falha ao carregar dados de evolução.');
+                    console.error("Erro na evolução:", evolutionResult);
+                }
+            } catch (e) {
+                console.error("Erro inesperado no fetch:", e);
+                setDashboardError("Ocorreu um erro inesperado.");
+                setEvolutionError("Ocorreu um erro inesperado.");
+            } finally {
+                setIsLoading(false);
+                setIsEvolutionLoading(false);
+                setIsRefreshing(false);
+            }
+        };
+
         if (tokenFromUrl) {
             login(tokenFromUrl);
             window.history.replaceState({}, document.title, window.location.pathname);
-        }
-    }, [login]);
-
-    // --- Funções de Fetch atualizadas para usar `fetchWithAuth` ---
-    const fetchData = useCallback(async () => {
-        setIsLoading(true);
-        setIsEvolutionLoading(true);
-        setDashboardError(null);
-        setEvolutionError(null);
-        try {
-            const [dashboardResult, evolutionResult] = await Promise.allSettled([
-                fetchWithAuth('/api/portfolio/dashboard'),
-                fetchWithAuth('/api/portfolio/evolution')
-            ]);
-            if (dashboardResult.status === 'fulfilled' && dashboardResult.value.ok) setDashboardData(await dashboardResult.value.json()); else setDashboardError('Falha ao carregar dados do dashboard.');
-            if (evolutionResult.status === 'fulfilled' && evolutionResult.value.ok) setEvolutionData((await evolutionResult.value.json()).evolution); else setEvolutionError('Falha ao carregar dados de evolução.');
-        } catch (e) {
-            setDashboardError("Ocorreu um erro inesperado.");
-            setEvolutionError("Ocorreu um erro inesperado.");
-        } finally {
-            setIsLoading(false);
-            setIsEvolutionLoading(false);
-            setIsRefreshing(false);
-        }
-    }, []);
-
-    // --- Gatilho para buscar dados apenas se autenticado ---
-    useEffect(() => {
-        if (isAuthenticated) {
+            fetchData();
+        } else if (isAuthenticated) {
             fetchData();
         }
-    }, [isAuthenticated, dataRefreshTrigger, fetchData]);
+    }, [isAuthenticated, dataRefreshTrigger, login]);
 
     const fetchEvolutionDataWithFilters = useCallback(async (filters) => {
         setIsEvolutionLoading(true);

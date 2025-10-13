@@ -4,7 +4,7 @@ import dashboardImage from '../../assets/dashboard-placeholder.png';
 import ThemeToggleButton from '../../ThemeToggleButton';
 
 
-const API_BASE_URL = 'https://dgu8gqwxq4xk4.cloudfront.net'; 
+const API_BASE_URL = 'http://localhost:8080'; 
     
 const Header = () => {
     const headerRef = useRef(null);

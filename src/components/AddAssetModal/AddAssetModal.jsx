@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react'; // <-- CORREÇÃO APLICADA AQUI
 import './addAssetModal.css';
-import { API_BASE_URL } from '../../../apiConfig';
+import { API_BASE_URL, fetchWithAuth } from '../../../apiConfig'; 
 import useDebounce from '../../hooks/useDebounce';
 
 // Função auxiliar para nomes amigáveis na UI
@@ -165,10 +165,11 @@ const AddAssetModal = ({ isOpen, onClose, onTransactionSuccess }) => {
                     quantity: parseFloat(quantity), pricePerUnit: parseFloat(pricePerUnit),
                     transactionDate, otherCosts: otherCosts ? parseFloat(otherCosts) : null,
                 };
-                const response = await fetch(`${API_BASE_URL}/api/transactions`, {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                const response = await fetchWithAuth('/api/transactions', {
+                    method: 'POST',
                     body: JSON.stringify(payload),
                 });
+
                 if (!response.ok) {
                     const errorData = await response.json().catch(() => ({}));
                     throw new Error(errorData.message || 'Ocorreu um erro ao salvar a transação.');
@@ -184,11 +185,11 @@ const AddAssetModal = ({ isOpen, onClose, onTransactionSuccess }) => {
                     investmentDate: fiPurchaseDate,
                     isDailyLiquid: fiDailyLiquidity,
                     maturityDate: fiMaturityDate,
-                    indexType: fiIndexer,
+                    indexType: fiIndexer,   
                     contractedRate: fiIndexerRate ? parseFloat(fiIndexerRate) : null,
                 };
-                const response = await fetch(`${API_BASE_URL}/api/fixed-income`, {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                const response = await fetchWithAuth('/api/fixed-income', {
+                    method: 'POST',
                     body: JSON.stringify(fixedIncomePayload),
                 });
                 if (!response.ok) {
