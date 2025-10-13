@@ -3,6 +3,9 @@ import './LandingPage.css';
 import dashboardImage from '../../assets/dashboard-placeholder.png';
 import ThemeToggleButton from '../../ThemeToggleButton';
 
+
+const API_BASE_URL = 'https://dgu8gqwxq4xk4.cloudfront.net'; 
+    
 const Header = () => {
     const headerRef = useRef(null);
 
@@ -28,6 +31,10 @@ const Header = () => {
                 </nav>
                 <div className="flex items-center gap-4">
                     <ThemeToggleButton />
+                    {/* NOVO BOTÃO DE LOGIN COM GOOGLE */}
+                    <a href={`${API_BASE_URL}/oauth2/authorization/google`} className="cta-button secondary-cta">
+                        Login com Google
+                    </a>
                     <a href="/dashboard" className="cta-button primary-cta">
                         Acessar Carteira
                     </a>
@@ -176,7 +183,7 @@ const Features = () => {
                 </p>
                 <div className="features-grid">
                     {featuresData.map((feature, index) => (
-                        <div 
+                        <div
                             key={index}
                             ref={el => cardsRef.current[index] = el}
                             className="feature-card"
@@ -227,8 +234,8 @@ const CallToAction = () => {
             <div className="landing-container text-center">
                 <h2 className="cta-title">Pronto para ter clareza sobre seus investimentos?</h2>
                 <div style={{ marginTop: '2rem' }}>
-                    <a 
-                        href="/dashboard" 
+                    <a
+                        href="/dashboard"
                         className="cta-button cta-section-button"
                         ref={buttonRef}
                     >
