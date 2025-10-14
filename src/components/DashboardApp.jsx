@@ -61,6 +61,7 @@ function DashboardApp() {
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [dataRefreshTrigger, setDataRefreshTrigger] = useState(0);
     const [isImporting, setIsImporting] = useState(false);
+    const [isExporting, setIsExporting] = useState(false); // NOVO ESTADO
     const [importResult, setImportResult] = useState(null);
     const fileInputRef = useRef(null);
     const headerRef = useRef(null);
@@ -74,7 +75,7 @@ function DashboardApp() {
         const fetchData = async () => {
             if (!localStorage.getItem('jwt_token')) {
                 console.log("Fetch data abortado: nenhum token encontrado.");
-                return; // Segurança extra para não fazer fetch sem token
+                return;
             }
             setIsLoading(true);
             setIsEvolutionLoading(true);
@@ -201,23 +202,44 @@ function DashboardApp() {
         }
     };
 
-    // --- Lógica de Proteção de Rota ---
+    // NOVA FUNÇÃO PARA EXPORTAR CSV
+    const handleExport = async () => {
+        setIsExporting(true);
+        try {
+            const response = await fetchWithAuth('/api/csv/export/transactions');
+            if (!response.ok) {
+                throw new Error('Falha na resposta da rede ao exportar.');
+            }
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'carteira_transacoes.csv';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error("Erro ao exportar CSV:", error);
+            alert("Não foi possível exportar as transações.");
+        } finally {
+            setIsExporting(false);
+        }
+    };
+
     if (isAuthLoading) {
         return <div className="loading-fullscreen">Verificando autenticação...</div>;
     }
     if (!isAuthenticated) {
-        // Redireciona via efeito para evitar warnings do React
         useEffect(() => { window.location.href = '/'; }, []);
         return <div className="loading-fullscreen">Acesso negado. Redirecionando...</div>;
     }
 
-    // --- Handlers de UI (sem alterações) ---
     const handleTransactionSuccess = () => setDataRefreshTrigger(prev => prev + 1);
     const handleEditAsset = (asset) => { setSelectedAsset(asset); setIsEditModalOpen(true); };
     const handleDeleteAsset = (asset) => { setSelectedAsset(asset); setIsDeleteModalOpen(true); };
     const handleImportClick = () => { fileInputRef.current.click(); };
 
-    // --- Renderização do Componente ---
     return (
     <div className="app-container">
         <header className="app-header" ref={headerRef}>
@@ -227,17 +249,18 @@ function DashboardApp() {
                 <button 
                     className="refresh-button transition-smooth" 
                     onClick={handleRefreshAssets} 
-                    disabled={isRefreshing || isLoading || isEvolutionLoading || isImporting}
+                    disabled={isRefreshing || isLoading || isEvolutionLoading || isImporting || isExporting}
                 >
                     {isRefreshing ? 'Atualizando...' : 'Atualizar Cotações'}
                 </button>
-                <a 
-                    href=""
-                    className="export-button transition-smooth" 
-                    download="carteira_transacoes.csv"
+                {/* BOTÃO DE EXPORTAÇÃO MODIFICADO */}
+                <button
+                    className="export-button transition-smooth"
+                    onClick={handleExport}
+                    disabled={isExporting || isLoading}
                 >
-                    Exportar CSV
-                </a>
+                    {isExporting ? 'Exportando...' : 'Exportar CSV'}
+                </button>
                 <input 
                     type="file" 
                     ref={fileInputRef} 
@@ -248,7 +271,7 @@ function DashboardApp() {
                 <button 
                     className="import-button transition-smooth" 
                     onClick={handleImportClick} 
-                    disabled={isImporting}
+                    disabled={isImporting || isExporting}
                 >
                     {isImporting ? 'Importando...' : 'Importar CSV'}
                 </button>
@@ -301,7 +324,6 @@ function DashboardApp() {
             />
         </main>
 
-        {/* --- Seção de Modais --- */}
         <AddAssetModal
             isOpen={isAddAssetModalOpen}
             onClose={() => setIsAddAssetModalOpen(false)}
