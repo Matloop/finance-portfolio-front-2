@@ -2,10 +2,8 @@ import React, { useEffect, useRef } from 'react';
 import './LandingPage.css';
 import dashboardImage from '../../assets/dashboard-placeholder.png';
 import ThemeToggleButton from '../../ThemeToggleButton';
+import API_BASE_URL from '../../apiConfig';
 
-
-const API_BASE_URL = 'https://dgu8gqwxq4xk4.cloudfront.net'; 
-    
 const Header = () => {
     const headerRef = useRef(null);
 
