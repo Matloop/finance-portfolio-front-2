@@ -2,8 +2,10 @@ import React, { useEffect, useRef } from 'react';
 import './LandingPage.css';
 import dashboardImage from '../../assets/dashboard-placeholder.png';
 import ThemeToggleButton from '../../ThemeToggleButton';
-import API_BASE_URL from '../../apiConfig';
+import {API_BASE_URL} from '../../../apiConfig';
 
+
+    
 const Header = () => {
     const headerRef = useRef(null);
 
