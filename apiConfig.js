@@ -1,6 +1,6 @@
 // A URL base da sua API. Em um projeto real, isso viria de variáveis de ambiente.
 // Use import.meta.env.VITE_API_URL se estiver usando Vite para gerenciar envs.
-export const API_BASE_URL = 'http://localhost:8080';
+export const API_BASE_URL = 'https://dgu8gqwxq4xk4.cloudfront.net';
 
 /**
  * Uma função 'fetch' que automaticamente adiciona o token JWT de autenticação.
