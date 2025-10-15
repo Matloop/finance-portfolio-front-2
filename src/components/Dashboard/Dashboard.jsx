@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Legend as RechartsLegend } from 'recharts';
 import AllocationChart from './AllocationChart';
-import './dashboard.css';
+import styles from './Dashboard.module.css'; // <-- CORREÇÃO PRINCIPAL APLICADA AQUI
 import { getFriendlyLabel } from '../../utils/labelUtils'; 
 
 // --- FUNÇÕES AUXILIARES ---
@@ -28,23 +28,23 @@ const formatPercentageChange = (value = 0) => {
     return `${value >= 0 ? '+' : ''}${formatted}%`;
 };
 
-// --- Componente de Tooltip customizado ---
+// --- Componente de Tooltip customizado (usa o objeto 'styles') ---
 const CustomTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {
         const data = payload[0].payload;
         return (
-            <div className="custom-tooltip">
-                <p className="tooltip-date">{data.date}</p>
-                <p className="tooltip-item valor-aplicado">Valor Aplicado: {formatCurrency(data.valorAplicado)}</p>
-                <p className="tooltip-item ganho-capital">Ganho Capital: {formatCurrency(data.ganhoCapital)}</p>
-                <p className="tooltip-item patrimonio">Patrimônio: {formatCurrency(data.patrimonio)}</p>
+            <div className={styles.customTooltip}>
+                <p className={styles.tooltipDate}>{data.date}</p>
+                <p className={`${styles.tooltipItem} ${styles.valorAplicado}`}>Valor Aplicado: {formatCurrency(data.valorAplicado)}</p>
+                <p className={`${styles.tooltipItem} ${styles.ganhoCapital}`}>Ganho Capital: {formatCurrency(data.ganhoCapital)}</p>
+                <p className={`${styles.tooltipItem} ${styles.patrimonio}`}>Patrimônio: {formatCurrency(data.patrimonio)}</p>
             </div>
         );
     }
     return null;
 };
 
-// --- Componente Principal ---
+// --- Componente Principal (código restante está correto) ---
 const Dashboard = ({ 
     summaryData,
     percentagesData, 
@@ -55,10 +55,10 @@ const Dashboard = ({
     onFilterChange,
     assetsData
 }) => {
+    // ... (todo o resto do código do componente permanece o mesmo)
     const [viewStack, setViewStack] = useState([{ path: [], title: 'Alocação por Categoria' }]);
     const [isDarkMode, setIsDarkMode] = useState(false);
     
-    // =======================> CORREÇÃO NOS ESTADOS <=======================
     const [selectedCategory, setSelectedCategory] = useState('all');
     const [selectedAssetType, setSelectedAssetType] = useState('all');
     const [selectedTicker, setSelectedTicker] = useState('all');
@@ -147,17 +147,20 @@ const Dashboard = ({
         }));
     }, [evolutionData]);
 
+
+    // O JSX que eu forneci antes já estava correto, usando o objeto 'styles'
     return (
-        <div className="dashboard-container">
-            <div className="chart-card card">
-                <div className="chart-header">
-                    <h2>{viewStack[viewStack.length - 1].title}</h2>
+        <div className={styles.dashboardContainer}>
+            {/* ... o resto do seu JSX aqui ... */}
+             <div className={`card ${styles.chartCard}`}>
+                <div className={styles.chartHeader}>
+                    <h2 className={styles.chartTitle}>{viewStack[viewStack.length - 1].title}</h2>
                     {viewStack.length > 1 && (
-                        <button className="back-button" onClick={handleBack}>← Voltar</button>
+                        <button className={styles.backButton} onClick={handleBack}>← Voltar</button>
                     )}
                 </div>
-                <div className="chart-wrapper">
-                    {isPercentagesLoading && <p className="loading-text">Carregando alocação...</p>}
+                <div className={styles.chartWrapper}>
+                    {isPercentagesLoading && <p className={styles.loadingText}>Carregando alocação...</p>}
                     {!isPercentagesLoading && currentDataNode && Object.keys(currentDataNode).length > 0 && (
                         <AllocationChart 
                             dataNode={currentDataNode}
@@ -167,23 +170,23 @@ const Dashboard = ({
                         />
                     )}
                     {!isPercentagesLoading && (!percentagesData || Object.keys(percentagesData).length === 0) && (
-                        <p className="info-message">Adicione ativos para ver a alocação.</p>
+                        <p className={styles.infoMessage}>Adicione ativos para ver a alocação.</p>
                     )}
                 </div>
             </div>
             
-            <div className="chart-card card">
-                <div className="chart-header">
-                    <div className="chart-title-wrapper">
-                        <h2>Evolução do Patrimônio</h2>
+            <div className={`card ${styles.chartCard}`}>
+                <div className={styles.chartHeader}>
+                    <div className={styles.chartTitleWrapper}>
+                        <h2 className={styles.chartTitle}>Evolução do Patrimônio</h2>
                         {!isPercentagesLoading && summaryData?.yearlyProfitability != null && (
-                            <span className={`annual-variation ${summaryData.yearlyProfitability >= 0 ? 'profit-positive' : 'profit-negative'}`}>
+                            <span className={`${styles.annualVariation} ${summaryData.yearlyProfitability >= 0 ? styles.profitPositive : styles.profitNegative}`}>
                                 {formatPercentageChange(summaryData.yearlyProfitability)}
                                 <span style={{fontSize: '0.7rem', marginLeft: '4px'}}> (12M)</span>
                             </span>
                         )}
                     </div>
-                    <div className="evolution-filters">
+                    <div className={styles.evolutionFilters}>
                         <select 
                             value={selectedCategory} 
                             onChange={e => {
@@ -234,8 +237,8 @@ const Dashboard = ({
                         )}
                     </div>
                 </div>
-                <div className="chart-wrapper">
-                    {isEvolutionLoading && <p className="loading-text">Carregando evolução...</p>}
+                <div className={styles.chartWrapper}>
+                    {isEvolutionLoading && <p className={styles.loadingText}>Carregando evolução...</p>}
                     {!isEvolutionLoading && evolutionError && (
                         <div className="error-message">
                             <p>Erro ao carregar dados de evolução.</p>
@@ -270,7 +273,7 @@ const Dashboard = ({
                         </ResponsiveContainer>
                     )}
                     {!isEvolutionLoading && !evolutionError && (!evolutionData || evolutionData.length === 0) && (
-                        <p className="info-message">Adicione transações para ver a evolução do seu patrimônio.</p>
+                        <p className={styles.infoMessage}>Adicione transações para ver a evolução do seu patrimônio.</p>
                     )}
                 </div>
             </div>

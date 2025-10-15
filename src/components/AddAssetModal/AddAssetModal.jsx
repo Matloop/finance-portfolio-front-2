@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react'; // <-- CORREÇÃO APLICADA AQUI
-import './addAssetModal.css';
+
+import styles from './AddAssetModal.module.css';
 import { API_BASE_URL, fetchWithAuth } from '../../../apiConfig'; 
 import useDebounce from '../../hooks/useDebounce';
 
@@ -207,20 +208,20 @@ const AddAssetModal = ({ isOpen, onClose, onTransactionSuccess }) => {
     };
 
     return (
-        <div className="modal-overlay">
-            <div className="modal-content">
-                <button className="close-button" onClick={handleClose}>×</button>
+        <div className={styles.modalOverlay}>
+            <div className={styles.modalContent}>
+                <button className={styles.closeButton} onClick={handleClose}>×</button>
                 <h2>Adicionar Transação</h2>
-                <div className="tabs">
-                    <button className={`tab-button ${activeTab === 'buy' ? 'active' : ''}`} onClick={() => setActiveTab('buy')}>Compra</button>
-                    <button className={`tab-button ${activeTab === 'sell' ? 'active' : ''}`} onClick={() => setActiveTab('sell')}>Venda</button>
-                    <button className={`tab-button ${activeTab === 'fixedIncome' ? 'active' : ''}`} onClick={() => setActiveTab('fixedIncome')}>Renda Fixa</button>
+                <div className={styles.tabs}>
+                    <button className={`${styles.tabButton} ${activeTab === 'buy' ? styles.active : ''}`} onClick={() => setActiveTab('buy')}>Compra</button>
+                    <button className={`${styles.tabButton} ${activeTab === 'sell' ? styles.active : ''}`} onClick={() => setActiveTab('sell')}>Venda</button>
+                    <button className={`${styles.tabButton} ${activeTab === 'fixedIncome' ? styles.active : ''}`} onClick={() => setActiveTab('fixedIncome')}>Renda Fixa</button>
                 </div>
 
-                <form className="asset-form" onSubmit={handleSubmit}>
+                <form onSubmit={handleSubmit}>
                     {(activeTab === 'buy' || activeTab === 'sell') && (
                         <>
-                            <div className="form-group">
+                            <div className={styles.formGroup}>
                                 <label htmlFor="asset-type">Tipo de Ativo (Filtro)</label>
                                 <select id="asset-type" value={selectedCategory} onChange={handleCategoryChange}>
                                     <option value="CRYPTO">Criptomoeda</option>
@@ -231,7 +232,7 @@ const AddAssetModal = ({ isOpen, onClose, onTransactionSuccess }) => {
                                 </select>
                             </div>
                             
-                            <div className="form-group search-group">
+                            <div className={`${styles.formGroup} ${styles.searchGroup}`}>
                                 <label htmlFor="asset-search">Buscar Ativo (Ticker ou Nome)</label>
                                 <input 
                                     type="text" id="asset-search"
@@ -240,53 +241,52 @@ const AddAssetModal = ({ isOpen, onClose, onTransactionSuccess }) => {
                                     onChange={(e) => setSearchTerm(e.target.value)}
                                     autoComplete="off"
                                 />
-                                {isSearching && <div className="spinner"></div>}
+                                {isSearching && <div className={styles.spinner}></div>}
                                 {searchResults.length > 0 && (
-                                    <ul className="search-results-list">
+                                    <ul className={styles.searchResultsList}>
                                         {searchResults.map((result, index) => (
                                             <li key={`${result.ticker}-${index}`} onClick={() => handleSelectSearchResult(result)}>
-                                                <span className="result-ticker">{result.ticker}</span>
-                                                <span className="result-name">{result.name}</span>
-                                                <span className="result-market">{result.market || result.assetType}</span>
+                                                <span className={styles.resultTicker}>{result.ticker}</span>
+                                                <span className={styles.resultName}>{result.name}</span>
+                                                <span className={styles.resultMarket}>{result.market || result.assetType}</span>
                                             </li>
                                         ))}
                                     </ul>
                                 )}
                             </div>
                             
-                            <div className="form-group">
+                            <div className={styles.formGroup}>
                                 <label>Ticker Selecionado</label>
                                 <input type="text" value={ticker} readOnly disabled />
                             </div>
 
-                            <div className="form-group">
+                            <div className={styles.formGroup}>
                                 <label htmlFor="asset-date">Data da Transação</label>
                                 <input type="date" id="asset-date" value={transactionDate} onChange={(e) => setTransactionDate(e.target.value)} />
                             </div>
-                            <div className="form-group">
+                            <div className={styles.formGroup}>
                                 <label htmlFor="asset-quantity">Quantidade</label>
                                 <input type="number" id="asset-quantity" step="any" value={quantity} onChange={(e) => setQuantity(e.target.value)} />
                             </div>
-                            <div className="form-group">
+                            <div className={styles.formGroup}>
                                 <label htmlFor="asset-price">
                                     Preço Unitário
-                                    <span className="currency-indicator">{currencyIndicator}</span>
+                                    <span className={styles.currencyIndicator}>{currencyIndicator}</span>
                                 </label>
-                                <div className="price-input-wrapper">
+                                <div className={styles.priceInputWrapper}>
                                     <input type="number" id="asset-price" step="any" value={pricePerUnit} onChange={(e) => setPricePerUnit(e.target.value)} disabled={isFetchingPrice} />
-                                    {isFetchingPrice && <div className="spinner"></div>}
+                                    {isFetchingPrice && <div className={styles.spinner}></div>}
                                 </div>
                             </div>
-                            <div className="form-group">
+                            <div className={styles.formGroup}>
                                 <label htmlFor="asset-costs">Outros Custos (Opcional)</label>
                                 <input type="number" id="asset-costs" step="any" placeholder="Taxas de corretagem, etc." value={otherCosts} onChange={(e) => setOtherCosts(e.target.value)} />
                             </div>
                         </>
                     )}
-
                     {activeTab === 'fixedIncome' && (
                        <>
-                           <div className="form-group">
+                           <div className={styles.formGroup}>
                                <label htmlFor="fi-name">Nome do Ativo</label>
                                <input 
                                    type="text" 
@@ -296,7 +296,7 @@ const AddAssetModal = ({ isOpen, onClose, onTransactionSuccess }) => {
                                    onChange={(e) => setFiName(e.target.value)} 
                                />
                            </div>
-                           <div className="form-group">
+                           <div className={styles.formGroup}>
                                <label htmlFor="fi-indexer">Indexador</label>
                                <select id="fi-indexer" value={fiIndexer} onChange={(e) => setFiIndexer(e.target.value)}>
                                    <option value="CDI">CDI</option>
@@ -305,7 +305,7 @@ const AddAssetModal = ({ isOpen, onClose, onTransactionSuccess }) => {
                                    <option value="PRE_FIXED">Pré-fixado</option>
                                </select>
                            </div>
-                            <div className="form-group">
+                            <div className={styles.formGroup}>
                                <label htmlFor="fi-indexer-rate">Taxa Contratada (%) (Opcional)</label>
                                <input 
                                    type="number" 
@@ -316,7 +316,7 @@ const AddAssetModal = ({ isOpen, onClose, onTransactionSuccess }) => {
                                    onChange={(e) => setFiIndexerRate(e.target.value)} 
                                />
                            </div>
-                           <div className="form-group">
+                           <div className={styles.formGroup}>
                                <label htmlFor="fi-purchase-date">Data da compra</label>
                                <input 
                                    type="date" 
@@ -325,7 +325,7 @@ const AddAssetModal = ({ isOpen, onClose, onTransactionSuccess }) => {
                                    onChange={(e) => setFiPurchaseDate(e.target.value)} 
                                />
                            </div>
-                           <div className="form-group">
+                           <div className={styles.formGroup}>
                                <label htmlFor="fi-initial-value">Valor Investido (R$)</label>
                                <input 
                                    type="number" 
@@ -336,7 +336,7 @@ const AddAssetModal = ({ isOpen, onClose, onTransactionSuccess }) => {
                                    onChange={(e) => setFiInitialValue(e.target.value)} 
                                />
                            </div>
-                            <div className="form-group">
+                            <div className={styles.formGroup}>
                                <label htmlFor="fi-maturity-date">Data de vencimento</label>
                                <input 
                                    type="date" 
@@ -345,20 +345,25 @@ const AddAssetModal = ({ isOpen, onClose, onTransactionSuccess }) => {
                                    onChange={(e) => setFiMaturityDate(e.target.value)} 
                                />
                            </div>
-                           <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                           {/* AQUI ESTÁ A CORREÇÃO PRINCIPAL NO JSX */}
+                           <div className={styles.checkboxGroup}>
                                <input 
                                    type="checkbox" 
                                    id="fi-daily-liquidity" 
                                    checked={fiDailyLiquidity} 
                                    onChange={(e) => setFiDailyLiquidity(e.target.checked)} 
                                />
-                               <label htmlFor="fi-daily-liquidity" style={{ marginBottom: 0 }}>Possui liquidez diária?</label>
+                               <label htmlFor="fi-daily-liquidity">Possui liquidez diária?</label>
                            </div>
                        </>
                     )}
 
                     {error && <p className="error-message">{error}</p>}
-                    <button type="submit" className="submit-button" disabled={isLoading || isSearching || isFetchingPrice}>
+                    <button 
+                        type="submit" 
+                        className="button button-primary" 
+                        style={{ width: '100%', marginTop: '1rem' }}
+                        disabled={isLoading || isSearching || isFetchingPrice}>
                         {isLoading ? 'Adicionando...' : 'Adicionar Transação'}
                     </button>
                 </form>
