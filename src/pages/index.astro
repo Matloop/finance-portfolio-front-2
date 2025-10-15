@@ -1,9 +1,8 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import LandingPage from '../components/LandingPage/LandingPage.jsx';
-
 ---
 
 <Layout title="CarteiraPro - Controle Total dos Seus Investimentos">
-	<LandingPage />
+	<LandingPage client:only="react" />
 </Layout>
