@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import './LandingPage.css';
-import dashboardImage from '../../assets/dashboard-placeholder.png';
+// Remova esta linha:
+// import dashboardImage from '../../assets/dashboard-placeholder.png';
 import ThemeToggleButton from '../../ThemeToggleButton';
 import {API_BASE_URL} from '../../../apiConfig';
 
@@ -20,7 +21,6 @@ const Header = () => {
     }, []);
 
     return (
-
         <header className="landing-header" ref={headerRef}>
             <div className="landing-container">
                 <a href="/" className="logo">CarteiraPro</a>
@@ -44,7 +44,7 @@ const Header = () => {
     );
 };
 
-const Hero = () => {
+const Hero = ({ dashboardImage }) => {
     const heroRef = useRef(null);
     const titleRef = useRef(null);
     const subtitleRef = useRef(null);
@@ -78,7 +78,6 @@ const Hero = () => {
                 duration: 0.8
             }, '-=0.4');
 
-            // Parallax effect no scroll
             if (window.ScrollTrigger) {
                 window.gsap.to(imageRef.current, {
                     y: 50,
@@ -148,7 +147,6 @@ const Features = () => {
                         }
                     });
 
-                    // Hover animation
                     card.addEventListener('mouseenter', () => {
                         window.gsap.to(card, {
                             y: -10,
@@ -203,22 +201,19 @@ const Footer = () => (
     </footer>
 );
 
-const LandingPage = () => {
+const LandingPage = ({ dashboardImage }) => {
     useEffect(() => {
-        // Smooth scroll para âncoras
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {
             anchor.addEventListener('click', function (e) {
-            const href = this.getAttribute('href');
-            
-           
-            if (href === '#') return;
-            
-            e.preventDefault();
-            const target = document.querySelector(href);
-            if (target) {
-                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }
-        });
+                const href = this.getAttribute('href');
+                if (href === '#') return;
+                
+                e.preventDefault();
+                const target = document.querySelector(href);
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
         });
     }, []);
 
@@ -226,7 +221,7 @@ const LandingPage = () => {
         <div className="landing-page">
             <Header />
             <main>
-                <Hero />
+                <Hero dashboardImage={dashboardImage} />
                 <Features />
             </main>
             <Footer />
