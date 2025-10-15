@@ -4,7 +4,6 @@ import dashboardImage from '../../assets/dashboard-placeholder.png';
 import ThemeToggleButton from '../../ThemeToggleButton';
 import {API_BASE_URL} from '../../../apiConfig';
 
-
     
 const Header = () => {
     const headerRef = useRef(null);
@@ -25,18 +24,18 @@ const Header = () => {
             <div className="landing-container">
                 <a href="/" className="logo">CarteiraPro</a>
                 <nav className="main-nav">
-                    <a href="#features">Recursos</a>
-                    <a href="#">Preços</a>
                     <a href="#">Contato</a>
                 </nav>
                 <div className="flex items-center gap-4">
                     <ThemeToggleButton />
-                    {/* NOVO BOTÃO DE LOGIN COM GOOGLE */}
-                    <a href={`${API_BASE_URL}/oauth2/authorization/google`} className="cta-button secondary-cta">
-                        Login com Google
-                    </a>
-                    <a href="/dashboard" className="cta-button primary-cta">
-                        Acessar Carteira
+                    <a href={`${API_BASE_URL}/oauth2/authorization/google`} className="cta-button google-login-button">
+                        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z" fill="#4285F4"/>
+                            <path d="M9.003 18c2.43 0 4.467-.806 5.956-2.18l-2.909-2.259c-.806.54-1.836.86-3.047.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9.003 18z" fill="#34A853"/>
+                            <path d="M3.964 10.71c-.18-.54-.282-1.117-.282-1.71s.102-1.17.282-1.71V4.958H.957C.347 6.173 0 7.548 0 9s.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/>
+                            <path d="M9.003 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.464.891 11.426 0 9.003 0 5.482 0 2.438 2.017.957 4.958L3.964 7.29c.708-2.127 2.692-3.71 5.039-3.71z" fill="#EA4335"/>
+                        </svg>
+                        <span>Faça login para acessar</span>
                     </a>
                 </div>
             </div>
@@ -108,9 +107,6 @@ const Hero = () => {
                         Visualize sua carteira, acompanhe a rentabilidade e tome decisões mais inteligentes. De Ações a Cripto, tudo em um só lugar.
                     </p>
                     <div className="hero-buttons" ref={buttonsRef}>
-                        <a href="/dashboard" className="cta-button primary-cta large-cta">
-                            Comece Agora &rarr;
-                        </a>
                         <a href="#features" className="cta-button secondary-cta large-cta">
                             Saiba Mais
                         </a>
@@ -198,59 +194,10 @@ const Features = () => {
     );
 };
 
-const CallToAction = () => {
-    const ctaRef = useRef(null);
-    const buttonRef = useRef(null);
-
-    useEffect(() => {
-        if (window.gsap && window.ScrollTrigger && ctaRef.current) {
-            window.gsap.from(ctaRef.current.children, {
-                y: 40,
-                opacity: 0,
-                duration: 0.8,
-                stagger: 0.2,
-                ease: 'power3.out',
-                scrollTrigger: {
-                    trigger: ctaRef.current,
-                    start: 'top 70%'
-                }
-            });
-
-            // Pulse animation no botão
-            if (buttonRef.current) {
-                window.gsap.to(buttonRef.current, {
-                    scale: 1.05,
-                    duration: 1,
-                    repeat: -1,
-                    yoyo: true,
-                    ease: 'power1.inOut'
-                });
-            }
-        }
-    }, []);
-
-    return (
-        <section className="cta-section" ref={ctaRef}>
-            <div className="landing-container text-center">
-                <h2 className="cta-title">Pronto para ter clareza sobre seus investimentos?</h2>
-                <div style={{ marginTop: '2rem' }}>
-                    <a
-                        href="/dashboard"
-                        className="cta-button cta-section-button"
-                        ref={buttonRef}
-                    >
-                        Criar minha carteira gratuitamente
-                    </a>
-                </div>
-            </div>
-        </section>
-    );
-};
-
 const Footer = () => (
     <footer className="landing-footer">
         <div className="landing-container">
-            <p>&copy; {new Date().getFullYear()} CarteiraPro. Todos os direitos reservados.</p>
+            <p>&copy; {new Date().getFullYear()} Matheus Dias Estacio. Todos os direitos reservados.</p>
         </div>
     </footer>
 );
@@ -275,7 +222,6 @@ const LandingPage = () => {
             <main>
                 <Hero />
                 <Features />
-                <CallToAction />
             </main>
             <Footer />
         </div>
