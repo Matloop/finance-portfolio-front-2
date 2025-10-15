@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import './app.css';
+import styles from './DashboardApp.module.css'; // Importação correta do módulo
 import Dashboard from './Dashboard/Dashboard.jsx';
 import Informations from './Informations/Informations.jsx';
 import Assets from './Assets/Assets.jsx';
@@ -9,6 +9,13 @@ import ThemeToggleButton from '../ThemeToggleButton.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import { fetchWithAuth } from '../../apiConfig.js';
 
+// Componente para redirecionamento seguro para evitar quebra das regras de Hooks
+const Redirecting = () => {
+    useEffect(() => {
+        window.location.href = '/';
+    }, []);
+    return <div className="loading-fullscreen">Acesso negado. Redirecionando...</div>;
+};
 
 const EditAssetModal = ({ isOpen, onClose, asset }) => {
     if (!isOpen) return null;
@@ -32,10 +39,10 @@ const DeleteConfirmationModal = ({ isOpen, onClose, asset, onConfirm }) => {
                 <button className="close-button" onClick={onClose}>×</button>
                 <h2>Confirmar Exclusão</h2>
                 <p>Tem certeza que deseja excluir todas as transações do ativo <strong>{asset?.ticker || asset?.name}</strong>?</p>
-                <p style={{ color: '#f87171' }}>Esta ação não pode ser desfeita.</p>
+                <p style={{ color: 'var(--danger-red)' }}>Esta ação não pode ser desfeita.</p>
                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '1.5rem' }}>
-                    <button className="refresh-button" onClick={onClose}>Cancelar</button>
-                    <button className="add-button" style={{ backgroundColor: '#dc2626' }} onClick={onConfirm}>Excluir</button>
+                    <button className="button button-secondary" onClick={onClose}>Cancelar</button>
+                    <button className="button button-primary" style={{ backgroundColor: 'var(--danger-red)' }} onClick={onConfirm}>Excluir</button>
                 </div>
             </div>
         </div>
@@ -61,11 +68,9 @@ function DashboardApp() {
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [dataRefreshTrigger, setDataRefreshTrigger] = useState(0);
     const [isImporting, setIsImporting] = useState(false);
-    const [isExporting, setIsExporting] = useState(false); // NOVO ESTADO
+    const [isExporting, setIsExporting] = useState(false);
     const [importResult, setImportResult] = useState(null);
     const fileInputRef = useRef(null);
-    const headerRef = useRef(null);
-    const mainRef = useRef(null);
 
     
     useEffect(() => {
@@ -74,7 +79,6 @@ function DashboardApp() {
 
         const fetchData = async () => {
             if (!localStorage.getItem('jwt_token')) {
-                console.log("Fetch data abortado: nenhum token encontrado.");
                 return;
             }
             setIsLoading(true);
@@ -82,7 +86,6 @@ function DashboardApp() {
             setDashboardError(null);
             setEvolutionError(null);
             try {
-                console.log("Iniciando busca de dados com token...");
                 const [dashboardResult, evolutionResult] = await Promise.allSettled([
                     fetchWithAuth('/api/portfolio/dashboard'),
                     fetchWithAuth('/api/portfolio/evolution')
@@ -92,7 +95,6 @@ function DashboardApp() {
                     setDashboardData(await dashboardResult.value.json());
                 } else {
                     setDashboardError('Falha ao carregar dados do dashboard.');
-                    console.error("Erro no dashboard:", dashboardResult);
                 }
 
                 if (evolutionResult.status === 'fulfilled' && evolutionResult.value.ok) {
@@ -100,10 +102,8 @@ function DashboardApp() {
                     setEvolutionData(evoData.evolution);
                 } else {
                     setEvolutionError('Falha ao carregar dados de evolução.');
-                    console.error("Erro na evolução:", evolutionResult);
                 }
             } catch (e) {
-                console.error("Erro inesperado no fetch:", e);
                 setDashboardError("Ocorreu um erro inesperado.");
                 setEvolutionError("Ocorreu um erro inesperado.");
             } finally {
@@ -116,7 +116,7 @@ function DashboardApp() {
         if (tokenFromUrl) {
             login(tokenFromUrl);
             window.history.replaceState({}, document.title, window.location.pathname);
-            fetchData();
+            // O fetchData será acionado pelo useEffect quando 'isAuthenticated' mudar para true
         } else if (isAuthenticated) {
             fetchData();
         }
@@ -148,7 +148,6 @@ function DashboardApp() {
             if (!response.ok) throw new Error('Falha ao buscar detalhes.');
             setInvestedDetails(await response.json());
         } catch (error) {
-            console.error("Erro:", error);
             setInvestedDetails([]);
         } finally {
             setIsInvestedDetailsLoading(false);
@@ -202,7 +201,6 @@ function DashboardApp() {
         }
     };
 
-    // NOVA FUNÇÃO PARA EXPORTAR CSV
     const handleExport = async () => {
         setIsExporting(true);
         try {
@@ -220,7 +218,6 @@ function DashboardApp() {
             a.remove();
             window.URL.revokeObjectURL(url);
         } catch (error) {
-            console.error("Erro ao exportar CSV:", error);
             alert("Não foi possível exportar as transações.");
         } finally {
             setIsExporting(false);
@@ -231,8 +228,7 @@ function DashboardApp() {
         return <div className="loading-fullscreen">Verificando autenticação...</div>;
     }
     if (!isAuthenticated) {
-        useEffect(() => { window.location.href = '/'; }, []);
-        return <div className="loading-fullscreen">Acesso negado. Redirecionando...</div>;
+        return <Redirecting />;
     }
 
     const handleTransactionSuccess = () => setDataRefreshTrigger(prev => prev + 1);
@@ -241,21 +237,20 @@ function DashboardApp() {
     const handleImportClick = () => { fileInputRef.current.click(); };
 
     return (
-    <div className="app-container">
-        <header className="app-header" ref={headerRef}>
+    <div className={styles.appContainer}>
+        <header className={styles.appHeader}>
             <h1>Minha Carteira</h1>
-            <div className="header-actions">
+            <div className={styles.headerActions}>
                 <ThemeToggleButton />
                 <button 
-                    className="refresh-button transition-smooth" 
+                    className="button button-secondary"
                     onClick={handleRefreshAssets} 
                     disabled={isRefreshing || isLoading || isEvolutionLoading || isImporting || isExporting}
                 >
                     {isRefreshing ? 'Atualizando...' : 'Atualizar Cotações'}
                 </button>
-                {/* BOTÃO DE EXPORTAÇÃO MODIFICADO */}
                 <button
-                    className="export-button transition-smooth"
+                    className="button button-secondary"
                     onClick={handleExport}
                     disabled={isExporting || isLoading}
                 >
@@ -269,27 +264,27 @@ function DashboardApp() {
                     style={{ display: 'none' }} 
                 />
                 <button 
-                    className="import-button transition-smooth" 
+                    className="button button-secondary"
                     onClick={handleImportClick} 
                     disabled={isImporting || isExporting}
                 >
                     {isImporting ? 'Importando...' : 'Importar CSV'}
                 </button>
                 <button 
-                    className="add-button transition-smooth" 
+                    className="button button-primary"
                     onClick={() => setIsAddAssetModalOpen(true)}
                 >
                     Adicionar Ativo
                 </button>
-                <button className="logout-button" onClick={logout}>
+                <button className={styles.logoutButton} onClick={logout}>
                     Sair
                 </button>
             </div>
         </header>
 
-        <main ref={mainRef}>
+        <main>
             {importResult && (
-                <div className={`import-summary animate-fade-in ${importResult.errorCount > 0 ? 'error' : 'success'}`}>
+                <div className={`${styles.importSummary} ${importResult.errorCount > 0 ? styles.error : styles.success}`}>
                     <p>Importação concluída: {importResult.successCount} sucesso(s), {importResult.errorCount} erro(s).</p>
                     {importResult.errors?.length > 0 && (
                         <ul>
