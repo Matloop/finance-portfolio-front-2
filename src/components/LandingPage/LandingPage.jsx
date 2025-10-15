@@ -20,11 +20,12 @@ const Header = () => {
     }, []);
 
     return (
+
         <header className="landing-header" ref={headerRef}>
             <div className="landing-container">
                 <a href="/" className="logo">CarteiraPro</a>
                 <nav className="main-nav">
-                    <a href="#">Contato</a>
+                    <a href="#contato">Contato</a>
                 </nav>
                 <div className="flex items-center gap-4">
                     <ThemeToggleButton />
@@ -207,12 +208,17 @@ const LandingPage = () => {
         // Smooth scroll para âncoras
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {
             anchor.addEventListener('click', function (e) {
-                e.preventDefault();
-                const target = document.querySelector(this.getAttribute('href'));
-                if (target) {
-                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }
-            });
+            const href = this.getAttribute('href');
+            
+           
+            if (href === '#') return;
+            
+            e.preventDefault();
+            const target = document.querySelector(href);
+            if (target) {
+                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        });
         });
     }, []);
 
