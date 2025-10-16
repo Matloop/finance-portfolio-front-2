@@ -46,11 +46,31 @@ const AddAssetModal = ({ isOpen, onClose, onTransactionSuccess }) => {
     // --- Estados para os campos de Renda Fixa ---
     const [fiName, setFiName] = useState('');
     const [fiIndexer, setFiIndexer] = useState('CDI');
+    const [fiProductType, setFiProductType] = useState('CDB');
     const [fiIndexerRate, setFiIndexerRate] = useState('');
     const [fiPurchaseDate, setFiPurchaseDate] = useState('');
     const [fiInitialValue, setFiInitialValue] = useState('');
     const [fiMaturityDate, setFiMaturityDate] = useState('');
     const [fiDailyLiquidity, setFiDailyLiquidity] = useState(false);
+
+    const indexerConfig = {
+        CDI: {
+            placeholder: "Ex: 110 (para 110% do CDI)",
+            rateIsRelevant: true,
+        },
+        SELIC: {
+            placeholder: "Rende 100% da Selic",
+            rateIsRelevant: false, 
+        },
+        IPCA: {
+            placeholder: "Ex: 6.5 (para IPCA + 6.5%)",
+            rateIsRelevant: true,
+        },
+        PRE_FIXED: {
+            placeholder: "Ex: 12.75 (para 12.75% a.a.)",
+            rateIsRelevant: true,
+        },
+    };
     
     // --- LÓGICA PARA DETERMINAR A MOEDA ---
     const currencyIndicator = useMemo(() => {
@@ -85,6 +105,7 @@ const AddAssetModal = ({ isOpen, onClose, onTransactionSuccess }) => {
         setTransactionDate('');
         setOtherCosts('');
         setFiName('');
+        setFiProductType('CDB');
         setFiIndexer('CDI');
         setFiIndexerRate('');
         setFiPurchaseDate('');
@@ -185,6 +206,7 @@ const AddAssetModal = ({ isOpen, onClose, onTransactionSuccess }) => {
                     investedAmount: parseFloat(fiInitialValue),
                     investmentDate: fiPurchaseDate,
                     isDailyLiquid: fiDailyLiquidity,
+                    assetType: fiProductType,
                     maturityDate: fiMaturityDate,
                     indexType: fiIndexer,   
                     contractedRate: fiIndexerRate ? parseFloat(fiIndexerRate) : null,
@@ -285,78 +307,110 @@ const AddAssetModal = ({ isOpen, onClose, onTransactionSuccess }) => {
                         </>
                     )}
                     {activeTab === 'fixedIncome' && (
-                       <>
-                           <div className={styles.formGroup}>
-                               <label htmlFor="fi-name">Nome do Ativo</label>
-                               <input 
-                                   type="text" 
-                                   id="fi-name" 
-                                   placeholder="Ex: CDB PicPay 105%" 
-                                   value={fiName} 
-                                   onChange={(e) => setFiName(e.target.value)} 
-                               />
-                           </div>
-                           <div className={styles.formGroup}>
-                               <label htmlFor="fi-indexer">Indexador</label>
-                               <select id="fi-indexer" value={fiIndexer} onChange={(e) => setFiIndexer(e.target.value)}>
-                                   <option value="CDI">CDI</option>
-                                   <option value="IPCA">IPCA</option>
-                                   <option value="SELIC">Selic</option>
-                                   <option value="PRE_FIXED">Pré-fixado</option>
-                               </select>
-                           </div>
-                            <div className={styles.formGroup}>
-                               <label htmlFor="fi-indexer-rate">Taxa Contratada (%) (Opcional)</label>
-                               <input 
-                                   type="number" 
-                                   id="fi-indexer-rate" 
-                                   step="any" 
-                                   placeholder="Ex: 110 para 110% do CDI" 
-                                   value={fiIndexerRate} 
-                                   onChange={(e) => setFiIndexerRate(e.target.value)} 
-                               />
-                           </div>
-                           <div className={styles.formGroup}>
-                               <label htmlFor="fi-purchase-date">Data da compra</label>
-                               <input 
-                                   type="date" 
-                                   id="fi-purchase-date" 
-                                   value={fiPurchaseDate} 
-                                   onChange={(e) => setFiPurchaseDate(e.target.value)} 
-                               />
-                           </div>
-                           <div className={styles.formGroup}>
-                               <label htmlFor="fi-initial-value">Valor Investido (R$)</label>
-                               <input 
-                                   type="number" 
-                                   id="fi-initial-value" 
-                                   step="any" 
-                                   placeholder="0,00" 
-                                   value={fiInitialValue} 
-                                   onChange={(e) => setFiInitialValue(e.target.value)} 
-                               />
-                           </div>
-                            <div className={styles.formGroup}>
-                               <label htmlFor="fi-maturity-date">Data de vencimento</label>
-                               <input 
-                                   type="date" 
-                                   id="fi-maturity-date" 
-                                   value={fiMaturityDate} 
-                                   onChange={(e) => setFiMaturityDate(e.target.value)} 
-                               />
-                           </div>
-                           {/* AQUI ESTÁ A CORREÇÃO PRINCIPAL NO JSX */}
-                           <div className={styles.checkboxGroup}>
-                               <input 
-                                   type="checkbox" 
-                                   id="fi-daily-liquidity" 
-                                   checked={fiDailyLiquidity} 
-                                   onChange={(e) => setFiDailyLiquidity(e.target.checked)} 
-                               />
-                               <label htmlFor="fi-daily-liquidity">Possui liquidez diária?</label>
-                           </div>
-                       </>
-                    )}
+    <>
+        <div className={styles.formGroup}>
+            <label htmlFor="fi-name">Nome do Ativo</label>
+            <input 
+                type="text" 
+                id="fi-name" 
+                placeholder="Ex: CDB PicPay 105%" 
+                value={fiName} 
+                onChange={(e) => setFiName(e.target.value)} 
+            />
+        </div>
+
+        <div className={styles.formGroup}>
+            <label htmlFor="fi-product-type">Tipo do Ativo</label>
+            <select 
+                id="fi-product-type" 
+                value={fiProductType} 
+                onChange={(e) => setFiProductType(e.target.value)}
+            >
+                <option value="CDB">CDB</option>
+                <option value="LCI">LCI</option>
+                <option value="LCA">LCA</option>
+                <option value="CRI">CRI</option>
+                <option value="CRA">CRA</option>
+                <option value="TESOURO_DIRETO">Tesouro Direto</option>
+                <option value="DEBENTURE">Debênture</option>
+            </select>
+        </div>
+        
+        <div className={styles.formGroup}>
+            <label htmlFor="fi-indexer">Indexador</label>
+            <select 
+                id="fi-indexer" 
+                value={fiIndexer} 
+                onChange={(e) => setFiIndexer(e.target.value)}
+            >
+                <option value="CDI">Pós-fixado (CDI)</option>
+                <option value="SELIC">Pós-fixado (Selic)</option>
+                <option value="IPCA">Híbrido (IPCA + taxa)</option>
+                <option value="PRE_FIXED">Pré-fixado</option>
+            </select>
+        </div>
+        
+        {/* MELHORIA PRINCIPAL APLICADA AQUI */}
+        <div className={styles.formGroup}>
+           <label htmlFor="fi-indexer-rate">Taxa Contratada (%)</label>
+           <input 
+               type="number" 
+               id="fi-indexer-rate" 
+               step="any"
+               // O placeholder agora é dinâmico
+               placeholder={indexerConfig[fiIndexer].placeholder}
+               value={fiIndexerRate} 
+               onChange={(e) => setFiIndexerRate(e.target.value)}
+               // O campo é desabilitado se a taxa não for relevante
+               disabled={!indexerConfig[fiIndexer].rateIsRelevant}
+               // Adiciona um estilo visual para indicar que está desabilitado
+               className={!indexerConfig[fiIndexer].rateIsRelevant ? styles.inputDisabled : ""}
+           />
+        </div>
+
+        <div className={styles.formGroup}>
+            <label htmlFor="fi-purchase-date">Data da Compra</label>
+            <input 
+                type="date" 
+                id="fi-purchase-date" 
+                value={fiPurchaseDate} 
+                onChange={(e) => setFiPurchaseDate(e.target.value)} 
+            />
+        </div>
+
+        <div className={styles.formGroup}>
+            <label htmlFor="fi-initial-value">Valor Investido (R$)</label>
+            <input 
+                type="number" 
+                id="fi-initial-value" 
+                step="any" 
+                placeholder="0,00" 
+                value={fiInitialValue} 
+                onChange={(e) => setFiInitialValue(e.target.value)} 
+            />
+        </div>
+
+         <div className={styles.formGroup}>
+            <label htmlFor="fi-maturity-date">Data de Vencimento</label>
+            <input 
+                type="date" 
+                id="fi-maturity-date" 
+                value={fiMaturityDate} 
+                onChange={(e) => setFiMaturityDate(e.target.value)} 
+            />
+        </div>
+
+        <div className={styles.checkboxGroup}>
+            <input 
+                type="checkbox" 
+                id="fi-daily-liquidity" 
+                checked={fiDailyLiquidity} 
+                onChange={(e) => setFiDailyLiquidity(e.target.checked)} 
+            />
+            <label htmlFor="fi-daily-liquidity">Possui liquidez diária?</label>
+        </div>
+    </>
+)}
 
                     {error && <p className="error-message">{error}</p>}
                     <button 
