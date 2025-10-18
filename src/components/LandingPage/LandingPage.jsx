@@ -1,7 +1,5 @@
 import React, { useEffect, useRef } from 'react';
 import './LandingPage.css';
-// Remova esta linha:
-// import dashboardImage from '../../assets/dashboard-placeholder.png';
 import ThemeToggleButton from '../../ThemeToggleButton';
 import {API_BASE_URL} from '../../../apiConfig';
 
