@@ -11,6 +11,10 @@
     {
       "source": "/login/oauth2/(.*)",
       "destination": "https://dgu8gqwxq4xk4.cloudfront.net/login/oauth2/$1"
+    },
+    {
+      "source": "/((?!_astro|favicon.svg|assets/).*)",
+      "destination": "/index.html"
     }
   ]
 }
