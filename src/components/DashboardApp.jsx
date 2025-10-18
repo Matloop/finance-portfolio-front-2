@@ -123,21 +123,27 @@ function DashboardApp() {
     }, [isAuthenticated, dataRefreshTrigger, login]);
 
     const fetchEvolutionDataWithFilters = useCallback(async (filters) => {
-        setIsEvolutionLoading(true);
-        setEvolutionError(null);
-        const params = new URLSearchParams();
-        if (filters.assetType) params.append('assetType', filters.assetType);
-        if (filters.ticker) params.append('ticker', filters.ticker);
-        try {
-            const response = await fetchWithAuth(`/api/portfolio/evolution?${params.toString()}`);
-            if (!response.ok) throw new Error('Falha ao carregar dados.');
-            const data = await response.json();
-            setEvolutionData(data.evolution);
-        } catch (e) {
-            setEvolutionError(e.message);
-        } finally {
-            setIsEvolutionLoading(false);
-        }
+    setIsEvolutionLoading(true);
+    setEvolutionError(null);
+    const params = new URLSearchParams();
+    
+    if (filters.category) params.append('category', filters.category);
+    
+
+    if (filters.assetType) params.append('assetType', filters.assetType);
+    if (filters.ticker) params.append('ticker', filters.ticker);
+    
+    try {
+        // A URL agora incluirá a categoria: /api/portfolio/evolution?category=brasil&assetType=ações
+        const response = await fetchWithAuth(`/api/portfolio/evolution?${params.toString()}`);
+        if (!response.ok) throw new Error('Falha ao carregar dados.');
+        const data = await response.json();
+        setEvolutionData(data.evolution);
+    } catch (e) {
+        setEvolutionError(e.message);
+    } finally {
+        setIsEvolutionLoading(false);
+    }
     }, []);
 
     const handleOpenInvestedDetails = async () => {

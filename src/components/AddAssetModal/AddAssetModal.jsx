@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react'; // <-- CORREÇÃO APLICADA AQUI
 
-import styles from './AddAssetModal.module.css';
+import styles from './addAssetModal.module.css';
 import { API_BASE_URL, fetchWithAuth } from '../../../apiConfig'; 
 import useDebounce from '../../hooks/useDebounce';
 
