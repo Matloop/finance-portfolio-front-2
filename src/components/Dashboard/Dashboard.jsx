@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Legend as RechartsLegend } from 'recharts';
 import AllocationChart from './AllocationChart';
-import styles from './Dashboard.module.css'; // <-- CORREÇÃO PRINCIPAL APLICADA AQUI
+import styles from './dashboard.module.css'; 
 import { getFriendlyLabel } from '../../utils/labelUtils'; 
 
 // --- FUNÇÕES AUXILIARES ---
