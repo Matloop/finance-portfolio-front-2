@@ -245,7 +245,7 @@ function DashboardApp() {
     return (
     <div className={styles.appContainer}>
         <header className={styles.appHeader}>
-            <h1>Minha Carteira</h1>
+            <h1>Minha Carteira</h1> 
             <div className={styles.headerActions}>
                 <ThemeToggleButton />
                 <button 
