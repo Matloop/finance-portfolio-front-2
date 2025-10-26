@@ -10,9 +10,15 @@ const formatPercentage = (value = 0) => {
 };
 const getFriendlyName = (key) => {
     const nameMap = {
-        'brasil': 'Brasil', 'eua': 'EUA', 'cripto': 'Cripto',
-        'ações': 'Ações', 'etfs': 'ETFs', 'renda fixa': 'Renda Fixa',
-        'criptomoedas': 'Criptomoedas'
+        'brasil': 'Brasil',
+        'eua': 'EUA',
+        'cripto': 'Cripto',
+        'caixa e equivalentes': 'Caixa e Equivalentes',
+        'ações': 'Ações',
+        'etfs': 'ETFs',
+        'renda fixa': 'Renda Fixa',
+        'criptomoedas': 'Criptomoedas',
+        'caixa': 'Caixa'
     };
     return nameMap[key.toLowerCase()] || key;
 };
@@ -20,6 +26,11 @@ const getFriendlyName = (key) => {
 // --- COMPONENTES REUTILIZÁVEIS ---
 const Accordion = ({ title, totalValue, percentage, children, defaultOpen = true }) => {
     const [isOpen, setIsOpen] = useState(defaultOpen);
+    // Garante que o accordion reabra se o título mudar (ex: ao mudar de aba)
+    useEffect(() => {
+        setIsOpen(defaultOpen);
+    }, [title, defaultOpen]);
+
     return (
         <div className="asset-accordion">
             <div className="accordion-header" onClick={() => setIsOpen(!isOpen)}>
@@ -39,7 +50,8 @@ const Accordion = ({ title, totalValue, percentage, children, defaultOpen = true
     );
 };
 
-const AssetsTable = ({ assets, isFixedIncome = false, onEditAsset, onDeleteAsset }) => {
+const AssetsTable = ({ assets, isFixedIncome = false, onEditAsset, onDeleteAsset, onTagAssetAsCash }) => {
+    // Tabela para Renda Fixa e Caixa (que não têm quantidade/preço médio)
     if (isFixedIncome) {
         return (
             <table className="assets-table">
@@ -61,6 +73,15 @@ const AssetsTable = ({ assets, isFixedIncome = false, onEditAsset, onDeleteAsset
                             <td className="align-right">{formatCurrency(asset.currentValue)}</td>
                             <td className="actions-column">
                                 <div className="action-buttons">
+                                    <button
+                                        className={`action-button cash-button ${asset.isTreatedAsCash ? 'active' : ''}`}
+                                        onClick={() => {
+                                            console.log("Botão de CAIXA (RF) clicado:", asset);
+                                            onTagAssetAsCash(asset, !asset.isTreatedAsCash);
+                                        }}
+                                        title={asset.isTreatedAsCash ? 'Remover dos Equivalentes de Caixa' : 'Marcar como Equivalente de Caixa'}>
+                                        💲
+                                    </button>
                                     <button className="action-button delete-button" onClick={() => onDeleteAsset(asset)} title="Deletar">🗑️</button>
                                 </div>
                             </td>
@@ -71,6 +92,7 @@ const AssetsTable = ({ assets, isFixedIncome = false, onEditAsset, onDeleteAsset
         );
     }
 
+    // Tabela padrão para Ações, ETFs, Cripto, etc.
     return (
         <table className="assets-table">
             <thead>
@@ -98,6 +120,15 @@ const AssetsTable = ({ assets, isFixedIncome = false, onEditAsset, onDeleteAsset
                         <td className="align-right">{formatCurrency(asset.currentValue)}</td>
                         <td className="actions-column">
                             <div className="action-buttons">
+                                <button
+                                    className={`action-button cash-button ${asset.isTreatedAsCash ? 'active' : ''}`}
+                                    onClick={() => {
+                                        console.log("Botão de CAIXA (Padrão) clicado:", asset);
+                                        onTagAssetAsCash(asset, !asset.isTreatedAsCash);
+                                    }}
+                                    title={asset.isTreatedAsCash ? 'Remover dos Equivalentes de Caixa' : 'Marcar como Equivalente de Caixa'}>
+                                    💲
+                                </button>
                                 <button className="action-button delete-button" onClick={() => onDeleteAsset(asset)} title="Deletar">🗑️</button>
                             </div>
                         </td>
@@ -108,18 +139,33 @@ const AssetsTable = ({ assets, isFixedIncome = false, onEditAsset, onDeleteAsset
     );
 };
 
-
 // --- COMPONENTE PRINCIPAL ---
-const Assets = ({ assetsData, isLoading, onEditAsset, onDeleteAsset }) => {
+const Assets = ({ assetsData, isLoading, onEditAsset, onDeleteAsset, onTagAssetAsCash }) => {
     const [activeTab, setActiveTab] = useState(null);
-
+    const [isDarkMode, setIsDarkMode] = useState(document.documentElement.classList.contains('dark'));
+    
+    // Efeito para definir a aba ativa inicial
     useEffect(() => {
-        if (assetsData && Object.keys(assetsData).length > 0 && !activeTab) {
-            setActiveTab(Object.keys(assetsData)[0]);
+        if (assetsData && Object.keys(assetsData).length > 0) {
+            const firstTab = Object.keys(assetsData)[0];
+            // Só define a aba se ela ainda não estiver definida ou se não existir mais
+            if (!activeTab || !assetsData[activeTab]) {
+                setActiveTab(firstTab);
+            }
         } else if (!assetsData && activeTab) {
             setActiveTab(null);
         }
     }, [assetsData, activeTab]);
+
+    // Efeito para observar mudanças no tema
+    useEffect(() => {
+        const observer = new MutationObserver(() => {
+            setIsDarkMode(document.documentElement.classList.contains('dark'));
+        });
+        observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+        return () => observer.disconnect();
+    }, []);
+
 
     const totalHeritageOfActiveTab = useMemo(() => {
         if (!assetsData || !activeTab) return 0;
@@ -128,7 +174,7 @@ const Assets = ({ assetsData, isLoading, onEditAsset, onDeleteAsset }) => {
 
     if (isLoading) {
         return (
-            <div className="assets-container card">
+            <div className={`assets-container card ${isDarkMode ? 'dark' : ''}`}>
                 <h2>Meus Ativos</h2>
                 <p className='info-message'>Carregando ativos...</p>
             </div>
@@ -137,7 +183,7 @@ const Assets = ({ assetsData, isLoading, onEditAsset, onDeleteAsset }) => {
 
     if (!assetsData || Object.keys(assetsData).length === 0) {
         return (
-            <div className="assets-container card">
+            <div className={`assets-container card ${isDarkMode ? 'dark' : ''}`}>
                 <h2>Meus Ativos</h2>
                 <p className="no-assets-message">Nenhum ativo na carteira para exibir.</p>
             </div>
@@ -148,7 +194,7 @@ const Assets = ({ assetsData, isLoading, onEditAsset, onDeleteAsset }) => {
     const activeTabData = activeTab ? assetsData[activeTab] || [] : [];
 
     return (
-        <div className="assets-container card">
+        <div className={`assets-container card ${isDarkMode ? 'dark' : ''}`}>
             <h2>Meus Ativos</h2>
 
             <div className="tabs-container">
@@ -169,6 +215,8 @@ const Assets = ({ assetsData, isLoading, onEditAsset, onDeleteAsset }) => {
                         const categoryPercentage = totalHeritageOfActiveTab > 0
                             ? (subCategory.totalValue / totalHeritageOfActiveTab) * 100
                             : 0;
+                        
+                        const isCashCategory = subCategory.categoryName.toLowerCase() === 'caixa';
 
                         return (
                             <Accordion
@@ -179,10 +227,11 @@ const Assets = ({ assetsData, isLoading, onEditAsset, onDeleteAsset }) => {
                             >
                                 {subCategory.assets && subCategory.assets.length > 0 ? (
                                     <AssetsTable 
-                                        assets={subCategory.assets} 
-                                        isFixedIncome={subCategory.categoryName.toLowerCase() === 'renda fixa'}
+                                        assets={subCategory.assets}
+                                        isFixedIncome={subCategory.categoryName.toLowerCase() === 'renda fixa' || isCashCategory}
                                         onEditAsset={onEditAsset}
                                         onDeleteAsset={onDeleteAsset}
+                                        onTagAssetAsCash={onTagAssetAsCash}
                                     />
                                 ) : (
                                     <p className="no-assets-message">Nenhum ativo nesta categoria.</p>
