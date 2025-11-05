@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import styles from './DashboardApp.module.css'; // Importação correta do módulo
+import styles from './DashboardApp.module.css';
 import Dashboard from './Dashboard/Dashboard.jsx';
 import Informations from './Informations/Informations.jsx';
 import Assets from './Assets/Assets.jsx';
@@ -9,7 +9,8 @@ import ThemeToggleButton from '../ThemeToggleButton.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import { fetchWithAuth } from '../../apiConfig.js';
 
-// Componente para redirecionamento seguro para evitar quebra das regras de Hooks
+// --- Componentes Auxiliares (Modais, etc.) ---
+
 const Redirecting = () => {
     useEffect(() => {
         window.location.href = '/';
@@ -49,8 +50,10 @@ const DeleteConfirmationModal = ({ isOpen, onClose, asset, onConfirm }) => {
     );
 };
 
+// --- Componente Principal ---
 
 function DashboardApp() {
+    // --- HOOKS DE ESTADO ---
     const { isAuthenticated, isLoading: isAuthLoading, login, logout } = useAuth();
     const [isAddAssetModalOpen, setIsAddAssetModalOpen] = useState(false);
     const [isInvestedModalOpen, setInvestedModalOpen] = useState(false);
@@ -72,43 +75,64 @@ function DashboardApp() {
     const [importResult, setImportResult] = useState(null);
     const fileInputRef = useRef(null);
 
-    
+    // --- FUNÇÕES DE CALLBACK E MANIPULADORES DE EVENTOS ---
+    const handleTransactionSuccess = () => setDataRefreshTrigger(prev => prev + 1);
+
+    const handleEvolutionFilterChange = useCallback(async (filters) => {
+        console.log("Buscando dados de evolução com os filtros:", filters);
+        setIsEvolutionLoading(true);
+        setEvolutionError(null);
+
+        try {
+            const chartType = filters.chartType || 'mwr';
+            const endpoint = chartType === 'twr' ? '/api/portfolio/evolution/twr' : '/api/portfolio/evolution/mwr';
+
+            const cleanFilters = {};
+            for (const key in filters) {
+                if (key !== 'chartType' && filters[key] && filters[key] !== 'all') {
+                    cleanFilters[key] = filters[key];
+                }
+            }
+
+            const params = new URLSearchParams(cleanFilters).toString();
+            const url = `${endpoint}?${params}`;
+            console.log("Chamando URL:", url);
+
+            const response = await fetchWithAuth(url);
+            if (!response.ok) {
+                throw new Error('Falha na resposta da rede ao buscar dados de evolução.');
+            }
+
+            const evoData = await response.json();
+            setEvolutionData(evoData.evolution);
+
+        } catch (e) {
+            console.error("Erro em handleEvolutionFilterChange:", e);
+            setEvolutionError("Ocorreu um erro ao atualizar os dados de evolução.");
+        } finally {
+            setIsEvolutionLoading(false);
+        }
+    }, []); // useCallback para evitar recriações desnecessárias
+
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
         const tokenFromUrl = params.get('token');
 
         const fetchData = async () => {
-            if (!localStorage.getItem('jwt_token')) {
-                return;
-            }
+            if (!localStorage.getItem('jwt_token')) return;
             setIsLoading(true);
-            setIsEvolutionLoading(true);
             setDashboardError(null);
-            setEvolutionError(null);
             try {
-                const [dashboardResult, evolutionResult] = await Promise.allSettled([
-                    fetchWithAuth('/api/portfolio/dashboard'),
-                    fetchWithAuth('/api/portfolio/evolution')
-                ]);
-
-                if (dashboardResult.status === 'fulfilled' && dashboardResult.value.ok) {
-                    setDashboardData(await dashboardResult.value.json());
+                const response = await fetchWithAuth('/api/portfolio/dashboard');
+                if (response.ok) {
+                    setDashboardData(await response.json());
                 } else {
                     setDashboardError('Falha ao carregar dados do dashboard.');
                 }
-
-                if (evolutionResult.status === 'fulfilled' && evolutionResult.value.ok) {
-                    const evoData = await evolutionResult.value.json();
-                    setEvolutionData(evoData.evolution);
-                } else {
-                    setEvolutionError('Falha ao carregar dados de evolução.');
-                }
             } catch (e) {
                 setDashboardError("Ocorreu um erro inesperado.");
-                setEvolutionError("Ocorreu um erro inesperado.");
             } finally {
                 setIsLoading(false);
-                setIsEvolutionLoading(false);
                 setIsRefreshing(false);
             }
         };
@@ -116,35 +140,10 @@ function DashboardApp() {
         if (tokenFromUrl) {
             login(tokenFromUrl);
             window.history.replaceState({}, document.title, window.location.pathname);
-            // O fetchData será acionado pelo useEffect quando 'isAuthenticated' mudar para true
         } else if (isAuthenticated) {
             fetchData();
         }
     }, [isAuthenticated, dataRefreshTrigger, login]);
-
-    const fetchEvolutionDataWithFilters = useCallback(async (filters) => {
-    setIsEvolutionLoading(true);
-    setEvolutionError(null);
-    const params = new URLSearchParams();
-    
-    if (filters.category) params.append('category', filters.category);
-    
-
-    if (filters.assetType) params.append('assetType', filters.assetType);
-    if (filters.ticker) params.append('ticker', filters.ticker);
-    
-    try {
-        // A URL agora incluirá a categoria: /api/portfolio/evolution?category=brasil&assetType=ações
-        const response = await fetchWithAuth(`/api/portfolio/evolution?${params.toString()}`);
-        if (!response.ok) throw new Error('Falha ao carregar dados.');
-        const data = await response.json();
-        setEvolutionData(data.evolution);
-    } catch (e) {
-        setEvolutionError(e.message);
-    } finally {
-        setIsEvolutionLoading(false);
-    }
-    }, []);
 
     const handleOpenInvestedDetails = async () => {
         setIsInvestedDetailsLoading(true);
@@ -160,12 +159,26 @@ function DashboardApp() {
         }
     };
 
+    const handleTagAssetAsCash = async (asset, isCash) => {
+        const identifier = asset.ticker || asset.name;
+        if (!identifier) return alert('Não foi possível identificar o ativo.');
+        try {
+            const response = await fetchWithAuth('/api/portfolio/preferences/tag-asset', {
+                method: 'POST',
+                body: JSON.stringify({ assetIdentifier: identifier, isCash }),
+            });
+            if (!response.ok) throw new Error('Falha ao atualizar a preferência do ativo.');
+            handleTransactionSuccess();
+        } catch (error) {
+            alert(error.message);
+        }
+    };
+
     const confirmDelete = async () => {
         if (!selectedAsset) return;
         const identifier = selectedAsset.ticker || selectedAsset.name;
         try {
-            const response = await fetchWithAuth(`/api/portfolio/assets/${identifier}?assetType=${selectedAsset.assetType}`, { method: 'DELETE' });
-            if (!response.ok) throw new Error('Falha ao excluir.');
+            await fetchWithAuth(`/api/portfolio/assets/${identifier}?assetType=${selectedAsset.assetType}`, { method: 'DELETE' });
             handleTransactionSuccess();
         } catch (error) {
             alert('Não foi possível excluir o ativo.');
@@ -178,15 +191,14 @@ function DashboardApp() {
     const handleRefreshAssets = async () => {
         setIsRefreshing(true);
         try {
-            const response = await fetchWithAuth('/api/portfolio/refresh', { method: 'POST' });
-            if (!response.ok) throw new Error('Falha ao solicitar atualização.');
+            await fetchWithAuth('/api/portfolio/refresh', { method: 'POST' });
             setTimeout(() => setDataRefreshTrigger(prev => prev + 1), 2000);
         } catch (err) {
             alert('Não foi possível atualizar as cotações.');
             setIsRefreshing(false);
         }
     };
-
+    
     const handleFileImport = async (event) => {
         const file = event.target.files[0];
         if (!file) return;
@@ -206,14 +218,12 @@ function DashboardApp() {
             event.target.value = null;
         }
     };
-
+    
     const handleExport = async () => {
         setIsExporting(true);
         try {
             const response = await fetchWithAuth('/api/csv/export/transactions');
-            if (!response.ok) {
-                throw new Error('Falha na resposta da rede ao exportar.');
-            }
+            if (!response.ok) throw new Error('Falha na resposta da rede ao exportar.');
             const blob = await response.blob();
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -222,7 +232,6 @@ function DashboardApp() {
             document.body.appendChild(a);
             a.click();
             a.remove();
-            window.URL.revokeObjectURL(url);
         } catch (error) {
             alert("Não foi possível exportar as transações.");
         } finally {
@@ -230,6 +239,11 @@ function DashboardApp() {
         }
     };
 
+    const handleEditAsset = (asset) => { setSelectedAsset(asset); setIsEditModalOpen(true); };
+    const handleDeleteAsset = (asset) => { setSelectedAsset(asset); setIsDeleteModalOpen(true); };
+    const handleImportClick = () => { fileInputRef.current.click(); };
+
+    // --- RETORNOS ANTECIPADOS (LOADING, AUTH) ---
     if (isAuthLoading) {
         return <div className="loading-fullscreen">Verificando autenticação...</div>;
     }
@@ -237,118 +251,69 @@ function DashboardApp() {
         return <Redirecting />;
     }
 
-    const handleTransactionSuccess = () => setDataRefreshTrigger(prev => prev + 1);
-    const handleEditAsset = (asset) => { setSelectedAsset(asset); setIsEditModalOpen(true); };
-    const handleDeleteAsset = (asset) => { setSelectedAsset(asset); setIsDeleteModalOpen(true); };
-    const handleImportClick = () => { fileInputRef.current.click(); };
-
+    // --- RENDERIZAÇÃO PRINCIPAL ---
     return (
-    <div className={styles.appContainer}>
-        <header className={styles.appHeader}>
-            <h1>Minha Carteira</h1>
-            <div className={styles.headerActions}>
-                <ThemeToggleButton />
-                <button 
-                    className="button button-secondary"
-                    onClick={handleRefreshAssets} 
-                    disabled={isRefreshing || isLoading || isEvolutionLoading || isImporting || isExporting}
-                >
-                    {isRefreshing ? 'Atualizando...' : 'Atualizar Cotações'}
-                </button>
-                <button
-                    className="button button-secondary"
-                    onClick={handleExport}
-                    disabled={isExporting || isLoading}
-                >
-                    {isExporting ? 'Exportando...' : 'Exportar CSV'}
-                </button>
-                <input 
-                    type="file" 
-                    ref={fileInputRef} 
-                    onChange={handleFileImport} 
-                    accept=".csv" 
-                    style={{ display: 'none' }} 
-                />
-                <button 
-                    className="button button-secondary"
-                    onClick={handleImportClick} 
-                    disabled={isImporting || isExporting}
-                >
-                    {isImporting ? 'Importando...' : 'Importar CSV'}
-                </button>
-                <button 
-                    className="button button-primary"
-                    onClick={() => setIsAddAssetModalOpen(true)}
-                >
-                    Adicionar Ativo
-                </button>
-                <button className={styles.logoutButton} onClick={logout}>
-                    Sair
-                </button>
-            </div>
-        </header>
-
-        <main>
-            {importResult && (
-                <div className={`${styles.importSummary} ${importResult.errorCount > 0 ? styles.error : styles.success}`}>
-                    <p>Importação concluída: {importResult.successCount} sucesso(s), {importResult.errorCount} erro(s).</p>
-                    {importResult.errors?.length > 0 && (
-                        <ul>
-                            {importResult.errors.slice(0, 5).map((err, i) => <li key={i}>{err}</li>)}
-                            {importResult.errors.length > 5 && <li>E mais {importResult.errors.length - 5} erros...</li>}
-                        </ul>
-                    )}
+        <div className={styles.appContainer}>
+            <header className={styles.appHeader}>
+                <h1>Minha Carteira</h1>
+                <div className={styles.headerActions}>
+                    <ThemeToggleButton />
+                    <button className="button button-secondary" onClick={handleRefreshAssets} disabled={isRefreshing || isLoading || isEvolutionLoading || isImporting || isExporting}>
+                        {isRefreshing ? 'Atualizando...' : 'Atualizar Cotações'}
+                    </button>
+                    <button className="button button-secondary" onClick={handleExport} disabled={isExporting || isLoading}>
+                        {isExporting ? 'Exportando...' : 'Exportar CSV'}
+                    </button>
+                    <input type="file" ref={fileInputRef} onChange={handleFileImport} accept=".csv" style={{ display: 'none' }} />
+                    <button className="button button-secondary" onClick={handleImportClick} disabled={isImporting || isExporting}>
+                        {isImporting ? 'Importando...' : 'Importar CSV'}
+                    </button>
+                    <button className="button button-primary" onClick={() => setIsAddAssetModalOpen(true)}>
+                        Adicionar Ativo
+                    </button>
+                    <button className={styles.logoutButton} onClick={logout}>Sair</button>
                 </div>
-            )}
+            </header>
 
-            <Informations 
-                summaryData={dashboardData?.summary}
-                isLoading={isLoading}
-                error={dashboardError}
-                onOpenInvestedDetails={handleOpenInvestedDetails}
-            />
-            <Dashboard 
-                percentagesData={dashboardData?.percentages} 
-                evolutionData={evolutionData}
-                isPercentagesLoading={isLoading}
-                isEvolutionLoading={isEvolutionLoading}
-                evolutionError={evolutionError}
-                onFilterChange={fetchEvolutionDataWithFilters}
-                assetsData={dashboardData?.assets}
-            />
-            <Assets 
-                assetsData={dashboardData?.assets} 
-                isLoading={isLoading}
-                error={dashboardError}
-                onEditAsset={handleEditAsset}
-                onDeleteAsset={handleDeleteAsset}
-            />
-        </main>
+            <main>
+                {importResult && (
+                    <div className={`${styles.importSummary} ${importResult.errorCount > 0 ? styles.error : styles.success}`}>
+                        {/* Conteúdo do sumário de importação */}
+                    </div>
+                )}
 
-        <AddAssetModal
-            isOpen={isAddAssetModalOpen}
-            onClose={() => setIsAddAssetModalOpen(false)}
-            onTransactionSuccess={handleTransactionSuccess}
-        />
-        <InvestedValueModal
-            isOpen={isInvestedModalOpen}
-            onClose={() => setInvestedModalOpen(false)}
-            detailsData={investedDetails}
-            isLoading={isInvestedDetailsLoading}
-        />
-        <EditAssetModal
-            isOpen={isEditModalOpen}
-            onClose={() => setIsEditModalOpen(false)}
-            asset={selectedAsset}
-        />
-        <DeleteConfirmationModal
-            isOpen={isDeleteModalOpen}
-            onClose={() => setIsDeleteModalOpen(false)}
-            asset={selectedAsset}
-            onConfirm={confirmDelete}
-        />
-    </div>
-);
+                <Informations
+                    summaryData={dashboardData?.summary}
+                    isLoading={isLoading}
+                    error={dashboardError}
+                    onOpenInvestedDetails={handleOpenInvestedDetails}
+                />
+                <Dashboard
+                    summaryData={dashboardData?.summary}
+                    percentagesData={dashboardData?.percentages}
+                    evolutionData={evolutionData}
+                    isPercentagesLoading={isLoading}
+                    isEvolutionLoading={isEvolutionLoading}
+                    onFilterChange={handleEvolutionFilterChange}
+                    evolutionError={evolutionError}
+                    assetsData={dashboardData?.assets} 
+                />
+                <Assets
+                    assetsData={dashboardData?.assets}
+                    isLoading={isLoading}
+                    error={dashboardError}
+                    onEditAsset={handleEditAsset}
+                    onDeleteAsset={handleDeleteAsset}
+                    onTagAssetAsCash={handleTagAssetAsCash}
+                />
+            </main>
+
+            <AddAssetModal isOpen={isAddAssetModalOpen} onClose={() => setIsAddAssetModalOpen(false)} onTransactionSuccess={handleTransactionSuccess} />
+            <InvestedValueModal isOpen={isInvestedModalOpen} onClose={() => setInvestedModalOpen(false)} detailsData={investedDetails} isLoading={isInvestedDetailsLoading} />
+            <EditAssetModal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} asset={selectedAsset} />
+            <DeleteConfirmationModal isOpen={isDeleteModalOpen} onClose={() => setIsDeleteModalOpen(false)} asset={selectedAsset} onConfirm={confirmDelete} />
+        </div>
+    );
 }
 
 export default DashboardApp;

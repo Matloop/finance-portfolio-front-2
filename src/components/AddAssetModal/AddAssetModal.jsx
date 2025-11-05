@@ -122,7 +122,15 @@ const AddAssetModal = ({ isOpen, onClose, onTransactionSuccess }) => {
     const handleCategoryChange = (e) => {
         const value = e.target.value;
         setSelectedCategory(value);
-        if (value.includes('_')) {
+        if(value === 'DOLLAR'){
+            setAssetType('DOLLAR'); // Define o tipo de ativo
+            setMarket('US');  // Opcional: define um mercado para moeda
+            setTicker('USDBRL');    // Trava o ticker
+            setSearchTerm('');      // Limpa a busca
+            setSearchResults([]);   // Limpa os resultados
+            fetchAssetPrice('USDBRL');
+        }else{
+            if (value.includes('_')) {
             const [type, mkt] = value.split('_');
             setAssetType(type);
             setMarket(mkt);
@@ -130,10 +138,13 @@ const AddAssetModal = ({ isOpen, onClose, onTransactionSuccess }) => {
             setAssetType(value);
             setMarket(null);
         }
+        
         setSearchTerm('');
         setSearchResults([]);
         setTicker('');
         setPricePerUnit('');
+        }
+        
     };
 
     // Busca o preço atual do ativo selecionado
@@ -251,6 +262,7 @@ const AddAssetModal = ({ isOpen, onClose, onTransactionSuccess }) => {
                                     <option value="ETF_B3">ETF (Brasil)</option>
                                     <option value="STOCK_US">Ação (EUA)</option>
                                     <option value="ETF_US">ETF (EUA)</option>
+                                    <option value={"DOLLAR"}>Dólar</option>
                                 </select>
                             </div>
                             
@@ -262,6 +274,8 @@ const AddAssetModal = ({ isOpen, onClose, onTransactionSuccess }) => {
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
                                     autoComplete="off"
+                                    disabled={selectedCategory === 'DOLLAR'}
+                                    className={selectedCategory === 'DOLLAR' ? styles.inputDisabled : ''}
                                 />
                                 {isSearching && <div className={styles.spinner}></div>}
                                 {searchResults.length > 0 && (

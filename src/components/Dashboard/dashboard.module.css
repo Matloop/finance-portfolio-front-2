@@ -251,3 +251,44 @@
     background-color: #7f1d1d;
     color: #fee2e2;
 }
+.toggleButtonGroup {
+  display: flex;
+  background-color: #e5e7eb; /* Cor de fundo do grupo */
+  border-radius: 8px;
+  padding: 4px;
+  margin-left: 1rem; /* Espaçamento do título */
+}
+
+/* Estilo para o botão do seletor */
+.toggleButton {
+  padding: 6px 12px;
+  border: none;
+  background-color: transparent;
+  color: #4b5563; /* Cor do texto inativo */
+  font-weight: 500;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background-color 0.2s ease, color 0.2s ease;
+  font-size: 0.8rem;
+}
+
+/* Estilo para o botão ativo */
+.toggleButton.active {
+  background-color: #ffffff; /* Fundo branco para o ativo */
+  color: #1e3a8a; /* Cor do texto ativo */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Ajustes para o modo escuro */
+:global(.dark) .toggleButtonGroup {
+  background-color: #374151; /* Fundo mais escuro */
+}
+
+:global(.dark) .toggleButton {
+  color: #d1d5db; /* Texto inativo mais claro */
+}
+
+:global(.dark) .toggleButton.active {
+  background-color: #4f46e5; /* Fundo ativo mais vibrante */
+  color: #ffffff; /* Texto ativo branco */
+}
